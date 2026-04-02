@@ -77,6 +77,7 @@ export default function NewListing() {
       start_hour: startHour || null,
       recurrence_type: recurrenceType,
       schedule_days: recurrenceType === 'recurring' ? scheduleDays : [],
+      event_date: recurrenceType === 'one-time' && eventDate ? format(eventDate, 'yyyy-MM-dd') : null,
       interest_tags: selectedTags,
     });
     setSaving(false);
