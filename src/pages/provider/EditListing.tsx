@@ -8,10 +8,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Trash2, X, CalendarIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format, parseISO } from 'date-fns';
+import { cn } from '@/lib/utils';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -42,6 +46,7 @@ export default function EditListing() {
   const [scheduleDays, setScheduleDays] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customTag, setCustomTag] = useState('');
+  const [eventDate, setEventDate] = useState<Date | undefined>();
   const [isActive, setIsActive] = useState(true);
 
   useEffect(() => {
@@ -68,6 +73,7 @@ export default function EditListing() {
       setRecurrenceType((data.recurrence_type as 'one-time' | 'recurring') || 'one-time');
       setScheduleDays(data.schedule_days || []);
       setSelectedTags(data.interest_tags || []);
+      setEventDate(data.event_date ? parseISO(data.event_date) : undefined);
       setIsActive(data.is_active);
       setLoading(false);
     })();
@@ -91,6 +97,7 @@ export default function EditListing() {
       start_hour: startHour || null,
       recurrence_type: recurrenceType,
       schedule_days: recurrenceType === 'recurring' ? scheduleDays : [],
+      event_date: recurrenceType === 'one-time' && eventDate ? format(eventDate, 'yyyy-MM-dd') : null,
       interest_tags: selectedTags,
       is_active: isActive,
     }).eq('id', id);
@@ -188,6 +195,34 @@ export default function EditListing() {
                   <span className={`text-sm ${recurrenceType === 'recurring' ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>Recurring</span>
                 </div>
               </div>
+              {recurrenceType === 'one-time' && (
+                <div className="space-y-2">
+                  <Label>Event Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !eventDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {eventDate ? format(eventDate, "PPP") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={eventDate}
+                        onSelect={setEventDate}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              )}
               {recurrenceType === 'recurring' && (
                 <div className="flex flex-wrap gap-2">
                   {DAYS_OF_WEEK.map((day) => (

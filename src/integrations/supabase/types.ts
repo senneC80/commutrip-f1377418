@@ -20,6 +20,7 @@ export type Database = {
           currency: string
           description: string | null
           duration_minutes: number | null
+          event_date: string | null
           id: string
           image_url: string | null
           interest_tags: string[] | null
@@ -41,6 +42,7 @@ export type Database = {
           currency?: string
           description?: string | null
           duration_minutes?: number | null
+          event_date?: string | null
           id?: string
           image_url?: string | null
           interest_tags?: string[] | null
@@ -62,6 +64,7 @@ export type Database = {
           currency?: string
           description?: string | null
           duration_minutes?: number | null
+          event_date?: string | null
           id?: string
           image_url?: string | null
           interest_tags?: string[] | null

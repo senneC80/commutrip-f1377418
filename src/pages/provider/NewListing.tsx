@@ -8,10 +8,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, X } from 'lucide-react';
+import { ArrowLeft, X, CalendarIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 const PREDEFINED_TAGS = [
   'Culinary', 'Nature', 'Crafts', 'Heritage', 'Adventure',
@@ -35,6 +39,7 @@ export default function NewListing() {
   const [scheduleDays, setScheduleDays] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customTag, setCustomTag] = useState('');
+  const [eventDate, setEventDate] = useState<Date | undefined>();
   const [saving, setSaving] = useState(false);
 
   const toggleTag = (tag: string) => {
@@ -72,6 +77,7 @@ export default function NewListing() {
       start_hour: startHour || null,
       recurrence_type: recurrenceType,
       schedule_days: recurrenceType === 'recurring' ? scheduleDays : [],
+      event_date: recurrenceType === 'one-time' && eventDate ? format(eventDate, 'yyyy-MM-dd') : null,
       interest_tags: selectedTags,
     });
     setSaving(false);
@@ -139,6 +145,34 @@ export default function NewListing() {
                   <span className={`text-sm ${recurrenceType === 'recurring' ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>Recurring</span>
                 </div>
               </div>
+              {recurrenceType === 'one-time' && (
+                <div className="space-y-2">
+                  <Label>Event Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !eventDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {eventDate ? format(eventDate, "PPP") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={eventDate}
+                        onSelect={setEventDate}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              )}
               {recurrenceType === 'recurring' && (
                 <div className="flex flex-wrap gap-2">
                   {DAYS_OF_WEEK.map((day) => (
