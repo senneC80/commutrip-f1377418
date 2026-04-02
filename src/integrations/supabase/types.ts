@@ -22,11 +22,17 @@ export type Database = {
           duration_minutes: number | null
           id: string
           image_url: string | null
+          interest_tags: string[] | null
           is_active: boolean
+          latitude: number | null
           location: string | null
+          longitude: number | null
           max_participants: number | null
           price: number | null
           provider_id: string
+          recurrence_type: string | null
+          schedule_days: string[] | null
+          start_hour: string | null
           title: string
           updated_at: string
         }
@@ -37,11 +43,17 @@ export type Database = {
           duration_minutes?: number | null
           id?: string
           image_url?: string | null
+          interest_tags?: string[] | null
           is_active?: boolean
+          latitude?: number | null
           location?: string | null
+          longitude?: number | null
           max_participants?: number | null
           price?: number | null
           provider_id: string
+          recurrence_type?: string | null
+          schedule_days?: string[] | null
+          start_hour?: string | null
           title: string
           updated_at?: string
         }
@@ -52,11 +64,17 @@ export type Database = {
           duration_minutes?: number | null
           id?: string
           image_url?: string | null
+          interest_tags?: string[] | null
           is_active?: boolean
+          latitude?: number | null
           location?: string | null
+          longitude?: number | null
           max_participants?: number | null
           price?: number | null
           provider_id?: string
+          recurrence_type?: string | null
+          schedule_days?: string[] | null
+          start_hour?: string | null
           title?: string
           updated_at?: string
         }
@@ -69,6 +87,7 @@ export type Database = {
           created_at: string
           id: string
           participants: number
+          provider_id: string | null
           status: string
           total_price: number | null
           traveller_id: string
@@ -79,6 +98,7 @@ export type Database = {
           created_at?: string
           id?: string
           participants?: number
+          provider_id?: string | null
           status?: string
           total_price?: number | null
           traveller_id: string
@@ -89,6 +109,7 @@ export type Database = {
           created_at?: string
           id?: string
           participants?: number
+          provider_id?: string | null
           status?: string
           total_price?: number | null
           traveller_id?: string
@@ -203,7 +224,9 @@ export type Database = {
       }
       trip_stops: {
         Row: {
+          arrival_date: string | null
           created_at: string
+          departure_date: string | null
           id: string
           latitude: number | null
           location_name: string
@@ -212,7 +235,9 @@ export type Database = {
           trip_id: string
         }
         Insert: {
+          arrival_date?: string | null
           created_at?: string
+          departure_date?: string | null
           id?: string
           latitude?: number | null
           location_name: string
@@ -221,7 +246,9 @@ export type Database = {
           trip_id: string
         }
         Update: {
+          arrival_date?: string | null
           created_at?: string
+          departure_date?: string | null
           id?: string
           latitude?: number | null
           location_name?: string
