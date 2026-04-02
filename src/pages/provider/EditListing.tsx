@@ -73,6 +73,7 @@ export default function EditListing() {
       setRecurrenceType((data.recurrence_type as 'one-time' | 'recurring') || 'one-time');
       setScheduleDays(data.schedule_days || []);
       setSelectedTags(data.interest_tags || []);
+      setEventDate(data.event_date ? parseISO(data.event_date) : undefined);
       setIsActive(data.is_active);
       setLoading(false);
     })();
