@@ -39,6 +39,7 @@ export default function NewListing() {
   const [scheduleDays, setScheduleDays] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customTag, setCustomTag] = useState('');
+  const [eventDate, setEventDate] = useState<Date | undefined>();
   const [saving, setSaving] = useState(false);
 
   const toggleTag = (tag: string) => {
