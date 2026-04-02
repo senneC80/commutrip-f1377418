@@ -46,6 +46,7 @@ export default function EditListing() {
   const [scheduleDays, setScheduleDays] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customTag, setCustomTag] = useState('');
+  const [eventDate, setEventDate] = useState<Date | undefined>();
   const [isActive, setIsActive] = useState(true);
 
   useEffect(() => {
