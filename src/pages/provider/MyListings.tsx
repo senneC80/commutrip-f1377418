@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Package, Clock, DollarSign, MapPin } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Package, Clock, DollarSign, MapPin, CalendarDays } from 'lucide-react';
 
 interface Activity {
   id: string;
@@ -15,6 +16,7 @@ interface Activity {
   currency: string;
   duration_minutes: number | null;
   is_active: boolean;
+  interest_tags: string[] | null;
 }
 
 export default function MyListings() {
@@ -25,16 +27,15 @@ export default function MyListings() {
 
   useEffect(() => {
     if (!user) return;
-    const fetch = async () => {
+    (async () => {
       const { data } = await supabase
         .from('activities')
-        .select('id, title, description, location, price, currency, duration_minutes, is_active')
+        .select('id, title, description, location, price, currency, duration_minutes, is_active, interest_tags')
         .eq('provider_id', user.id)
         .order('created_at', { ascending: false });
       if (data) setActivities(data);
       setLoading(false);
-    };
-    fetch();
+    })();
   }, [user]);
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>;
@@ -62,9 +63,18 @@ export default function MyListings() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {activities.map((a) => (
-            <Card key={a.id} className="shadow-card hover:shadow-card-hover transition-shadow cursor-pointer group">
+            <Card
+              key={a.id}
+              className="shadow-card hover:shadow-card-hover transition-shadow cursor-pointer group"
+              onClick={() => navigate(`/dashboard/edit-listing/${a.id}`)}
+            >
               <CardHeader>
-                <CardTitle className="text-lg group-hover:text-primary transition-colors">{a.title}</CardTitle>
+                <div className="flex items-start justify-between">
+                  <CardTitle className="text-lg group-hover:text-primary transition-colors">{a.title}</CardTitle>
+                  <span className={`inline-block text-xs font-medium px-2 py-1 rounded-full ${a.is_active ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                    {a.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
               </CardHeader>
               <CardContent className="space-y-2">
                 {a.location && (
@@ -82,9 +92,16 @@ export default function MyListings() {
                     <Clock className="h-4 w-4" /> {a.duration_minutes} min
                   </div>
                 )}
-                <span className={`inline-block text-xs font-medium px-2 py-1 rounded-full ${a.is_active ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
-                  {a.is_active ? 'Active' : 'Inactive'}
-                </span>
+                {a.interest_tags && a.interest_tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    {a.interest_tags.slice(0, 3).map((tag) => (
+                      <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                    ))}
+                    {a.interest_tags.length > 3 && (
+                      <Badge variant="outline" className="text-xs">+{a.interest_tags.length - 3}</Badge>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -93,22 +110,14 @@ export default function MyListings() {
 
       {/* Upcoming Bookings section */}
       <div className="mt-10">
-        <h2 className="text-xl font-heading font-semibold mb-4">Upcoming Bookings</h2>
+        <h2 className="text-xl font-heading font-semibold mb-4">Incoming Bookings</h2>
         <Card className="shadow-card">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <Calendar className="h-10 w-10 text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">No upcoming bookings yet.</p>
+            <CalendarDays className="h-10 w-10 text-muted-foreground mb-3" />
+            <p className="text-muted-foreground">No bookings yet.</p>
           </CardContent>
         </Card>
       </div>
     </div>
-  );
-}
-
-function Calendar(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="M8 2v4" /><path d="M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" />
-    </svg>
   );
 }

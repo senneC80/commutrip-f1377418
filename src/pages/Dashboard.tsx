@@ -10,6 +10,7 @@ import NewTrip from '@/pages/traveller/NewTrip';
 // Provider pages
 import MyListings from '@/pages/provider/MyListings';
 import NewListing from '@/pages/provider/NewListing';
+import EditListing from '@/pages/provider/EditListing';
 import Community from '@/pages/provider/Community';
 
 // Shared pages
@@ -50,6 +51,7 @@ export default function Dashboard() {
         {!isTraveller && (
           <>
             <Route path="/new-listing" element={<NewListing />} />
+            <Route path="/edit-listing/:id" element={<EditListing />} />
             <Route path="/community" element={<Community />} />
           </>
         )}
