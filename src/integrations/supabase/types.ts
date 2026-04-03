@@ -16,6 +16,8 @@ export type Database = {
     Tables: {
       activities: {
         Row: {
+          available_from: string | null
+          available_until: string | null
           created_at: string
           currency: string
           description: string | null
@@ -38,6 +40,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          available_from?: string | null
+          available_until?: string | null
           created_at?: string
           currency?: string
           description?: string | null
@@ -60,6 +64,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          available_from?: string | null
+          available_until?: string | null
           created_at?: string
           currency?: string
           description?: string | null
