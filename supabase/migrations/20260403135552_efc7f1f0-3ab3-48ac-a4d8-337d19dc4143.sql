@@ -1,0 +1,1 @@
+ALTER TABLE public.activities ADD COLUMN available_from date, ADD COLUMN available_until date;

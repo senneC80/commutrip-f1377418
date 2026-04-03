@@ -40,6 +40,8 @@ export default function NewListing() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customTag, setCustomTag] = useState('');
   const [eventDate, setEventDate] = useState<Date | undefined>();
+  const [availableFrom, setAvailableFrom] = useState<Date | undefined>();
+  const [availableUntil, setAvailableUntil] = useState<Date | undefined>();
   const [saving, setSaving] = useState(false);
 
   const toggleTag = (tag: string) => {
@@ -65,6 +67,12 @@ export default function NewListing() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+
+    if (recurrenceType === 'recurring' && !availableFrom) {
+      toast({ title: 'Available From date is required for recurring activities', variant: 'destructive' });
+      return;
+    }
+
     setSaving(true);
     const { error } = await supabase.from('activities').insert({
       provider_id: user.id,
@@ -78,6 +86,8 @@ export default function NewListing() {
       recurrence_type: recurrenceType,
       schedule_days: recurrenceType === 'recurring' ? scheduleDays : [],
       event_date: recurrenceType === 'one-time' && eventDate ? format(eventDate, 'yyyy-MM-dd') : null,
+      available_from: recurrenceType === 'recurring' && availableFrom ? format(availableFrom, 'yyyy-MM-dd') : null,
+      available_until: recurrenceType === 'recurring' && availableUntil ? format(availableUntil, 'yyyy-MM-dd') : null,
       interest_tags: selectedTags,
     });
     setSaving(false);
@@ -152,35 +162,64 @@ export default function NewListing() {
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !eventDate && "text-muted-foreground"
-                        )}
+                        className={cn("w-full justify-start text-left font-normal", !eventDate && "text-muted-foreground")}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {eventDate ? format(eventDate, "PPP") : "Pick a date"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={eventDate}
-                        onSelect={setEventDate}
-                        initialFocus
-                        className={cn("p-3 pointer-events-auto")}
-                      />
+                      <Calendar mode="single" selected={eventDate} onSelect={setEventDate} initialFocus className={cn("p-3 pointer-events-auto")} />
                     </PopoverContent>
                   </Popover>
                 </div>
               )}
               {recurrenceType === 'recurring' && (
-                <div className="flex flex-wrap gap-2">
-                  {DAYS_OF_WEEK.map((day) => (
-                    <label key={day} className="flex items-center gap-1.5 cursor-pointer">
-                      <Checkbox checked={scheduleDays.includes(day)} onCheckedChange={() => toggleDay(day)} />
-                      <span className="text-sm">{day}</span>
-                    </label>
-                  ))}
+                <div className="space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    {DAYS_OF_WEEK.map((day) => (
+                      <label key={day} className="flex items-center gap-1.5 cursor-pointer">
+                        <Checkbox checked={scheduleDays.includes(day)} onCheckedChange={() => toggleDay(day)} />
+                        <span className="text-sm">{day}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label>Available From *</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn("w-full justify-start text-left font-normal", !availableFrom && "text-muted-foreground")}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {availableFrom ? format(availableFrom, "PPP") : "Pick a date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar mode="single" selected={availableFrom} onSelect={setAvailableFrom} initialFocus className={cn("p-3 pointer-events-auto")} />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Available Until</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn("w-full justify-start text-left font-normal", !availableUntil && "text-muted-foreground")}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {availableUntil ? format(availableUntil, "PPP") : "No end date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar mode="single" selected={availableUntil} onSelect={setAvailableUntil} initialFocus className={cn("p-3 pointer-events-auto")} />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
