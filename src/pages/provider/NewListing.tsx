@@ -83,6 +83,8 @@ export default function NewListing() {
       title,
       description: description || null,
       location: location || null,
+      latitude,
+      longitude,
       price: price ? parseFloat(price) : null,
       duration_minutes: duration ? parseInt(duration) : null,
       max_participants: maxParticipants ? parseInt(maxParticipants) : null,
