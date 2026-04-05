@@ -16,6 +16,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import GoogleMapsProvider from '@/components/GoogleMapsProvider';
+import PlacesAutocomplete from '@/components/PlacesAutocomplete';
 
 const PREDEFINED_TAGS = [
   'Culinary', 'Nature', 'Crafts', 'Heritage', 'Adventure',
@@ -24,13 +26,15 @@ const PREDEFINED_TAGS = [
 
 const DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-export default function NewListing() {
+function NewListingForm() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
   const [price, setPrice] = useState('');
   const [maxParticipants, setMaxParticipants] = useState('');
   const [startHour, setStartHour] = useState('');
@@ -79,6 +83,8 @@ export default function NewListing() {
       title,
       description: description || null,
       location: location || null,
+      latitude,
+      longitude,
       price: price ? parseFloat(price) : null,
       duration_minutes: duration ? parseInt(duration) : null,
       max_participants: maxParticipants ? parseInt(maxParticipants) : null,
@@ -119,8 +125,12 @@ export default function NewListing() {
               <Textarea id="desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe the experience…" rows={4} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="loc">Location</Label>
-              <Input id="loc" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Ubud, Bali" />
+              <Label>Location</Label>
+              <PlacesAutocomplete
+                value={location}
+                onChange={({ name, lat, lng }) => { setLocation(name); setLatitude(lat); setLongitude(lng); }}
+                placeholder="e.g. Ubud, Bali"
+              />
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -267,5 +277,13 @@ export default function NewListing() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function NewListing() {
+  return (
+    <GoogleMapsProvider>
+      <NewListingForm />
+    </GoogleMapsProvider>
   );
 }

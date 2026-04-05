@@ -65,7 +65,7 @@ export default function MyTrips() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {trips.map((trip) => (
-            <Card key={trip.id} className="shadow-card hover:shadow-card-hover transition-shadow cursor-pointer group">
+            <Card key={trip.id} className="shadow-card hover:shadow-card-hover transition-shadow cursor-pointer group" onClick={() => navigate(`/dashboard/trip/${trip.id}`)}>
               <CardHeader>
                 <CardTitle className="text-lg group-hover:text-primary transition-colors">{trip.title}</CardTitle>
               </CardHeader>

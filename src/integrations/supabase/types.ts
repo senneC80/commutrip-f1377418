@@ -334,6 +334,41 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      earth: { Args: never; Returns: number }
+      get_recommended_activities: {
+        Args: {
+          _arrival_date: string
+          _departure_date: string
+          _limit_count?: number
+          _radius_km?: number
+          _stop_lat: number
+          _stop_lng: number
+          _traveller_tags?: string[]
+        }
+        Returns: {
+          available_from: string
+          available_until: string
+          currency: string
+          description: string
+          distance_km: number
+          duration_minutes: number
+          event_date: string
+          id: string
+          image_url: string
+          interest_tags: string[]
+          latitude: number
+          location: string
+          longitude: number
+          max_participants: number
+          price: number
+          provider_id: string
+          recurrence_type: string
+          schedule_days: string[]
+          start_hour: string
+          tag_match_count: number
+          title: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
