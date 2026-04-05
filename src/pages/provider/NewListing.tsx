@@ -125,8 +125,12 @@ export default function NewListing() {
               <Textarea id="desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe the experience…" rows={4} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="loc">Location</Label>
-              <Input id="loc" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Ubud, Bali" />
+              <Label>Location</Label>
+              <PlacesAutocomplete
+                value={location}
+                onChange={({ name, lat, lng }) => { setLocation(name); setLatitude(lat); setLongitude(lng); }}
+                placeholder="e.g. Ubud, Bali"
+              />
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
