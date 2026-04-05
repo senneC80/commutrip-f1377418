@@ -26,7 +26,7 @@ const PREDEFINED_TAGS = [
 
 const DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-export default function NewListing() {
+function NewListingForm() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -277,5 +277,13 @@ export default function NewListing() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function NewListing() {
+  return (
+    <GoogleMapsProvider>
+      <NewListingForm />
+    </GoogleMapsProvider>
   );
 }
