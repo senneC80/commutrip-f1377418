@@ -19,7 +19,7 @@ export default function PlacesAutocomplete({
 }: PlacesAutocompleteProps) {
   const places = useMapsLibrary('places');
   const inputRef = useRef<HTMLInputElement>(null);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const autocompleteRef = useRef<any>(null);
   const [inputValue, setInputValue] = useState(value);
 
   useEffect(() => {
@@ -44,8 +44,8 @@ export default function PlacesAutocomplete({
     });
 
     return () => {
-      if (autocompleteRef.current) {
-        google.maps.event.clearInstanceListeners(autocompleteRef.current);
+      if (autocompleteRef.current && window.google) {
+        window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
       }
     };
   }, [places]);

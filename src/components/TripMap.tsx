@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { Map, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps';
+import { Map, AdvancedMarker, useMap } from '@vis.gl/react-google-maps';
 
 interface Stop {
   id: string;
@@ -19,7 +19,7 @@ function FitBounds({ stops }: { stops: Stop[] }) {
 
   useEffect(() => {
     if (!map || validStops.length === 0) return;
-    const bounds = new google.maps.LatLngBounds();
+    const bounds = new (window as any).google.maps.LatLngBounds();
     validStops.forEach((s) => bounds.extend({ lat: s.latitude!, lng: s.longitude! }));
     map.fitBounds(bounds, { top: 40, bottom: 40, left: 40, right: 40 });
   }, [map, validStops]);
