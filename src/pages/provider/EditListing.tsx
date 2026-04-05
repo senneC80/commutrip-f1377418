@@ -16,6 +16,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
+import GoogleMapsProvider from '@/components/GoogleMapsProvider';
+import PlacesAutocomplete from '@/components/PlacesAutocomplete';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -27,7 +29,7 @@ const PREDEFINED_TAGS = [
 ];
 const DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-export default function EditListing() {
+function EditListingForm() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -38,6 +40,8 @@ export default function EditListing() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
   const [price, setPrice] = useState('');
   const [maxParticipants, setMaxParticipants] = useState('');
   const [startHour, setStartHour] = useState('');
@@ -68,7 +72,8 @@ export default function EditListing() {
       setTitle(data.title);
       setDescription(data.description || '');
       setLocation(data.location || '');
-      setPrice(data.price != null ? String(data.price) : '');
+      setLatitude(data.latitude || null);
+      setLongitude(data.longitude || null);
       setMaxParticipants(data.max_participants != null ? String(data.max_participants) : '');
       setStartHour(data.start_hour || '');
       setDuration(data.duration_minutes != null ? String(data.duration_minutes) : '');
