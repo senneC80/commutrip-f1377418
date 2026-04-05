@@ -16,6 +16,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import GoogleMapsProvider from '@/components/GoogleMapsProvider';
+import PlacesAutocomplete from '@/components/PlacesAutocomplete';
 
 const PREDEFINED_TAGS = [
   'Culinary', 'Nature', 'Crafts', 'Heritage', 'Adventure',
@@ -31,6 +33,8 @@ export default function NewListing() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
   const [price, setPrice] = useState('');
   const [maxParticipants, setMaxParticipants] = useState('');
   const [startHour, setStartHour] = useState('');

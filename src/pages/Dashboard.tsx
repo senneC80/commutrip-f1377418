@@ -1,11 +1,13 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardLayout from '@/components/DashboardLayout';
-import { MapPin, User, MessageSquare, Package, Users } from 'lucide-react';
+import { MapPin, User, MessageSquare, Package, Users, Search } from 'lucide-react';
 
 // Traveller pages
 import MyTrips from '@/pages/traveller/MyTrips';
 import NewTrip from '@/pages/traveller/NewTrip';
+import TripDetail from '@/pages/traveller/TripDetail';
+import BrowseActivities from '@/pages/traveller/BrowseActivities';
 
 // Provider pages
 import MyListings from '@/pages/provider/MyListings';
@@ -16,9 +18,11 @@ import Community from '@/pages/provider/Community';
 // Shared pages
 import Profile from '@/pages/Profile';
 import Messages from '@/pages/Messages';
+import ActivityDetail from '@/pages/ActivityDetail';
 
 const travellerNav = [
   { title: 'My Trips', url: '/dashboard', icon: MapPin },
+  { title: 'Browse Activities', url: '/dashboard/browse', icon: Search },
   { title: 'My Profile', url: '/dashboard/profile', icon: User },
   { title: 'Messages', url: '/dashboard/messages', icon: MessageSquare },
 ];
@@ -47,7 +51,14 @@ export default function Dashboard() {
         <Route path="/" element={isTraveller ? <MyTrips /> : <MyListings />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/messages" element={<Messages />} />
-        {isTraveller && <Route path="/new-trip" element={<NewTrip />} />}
+        <Route path="/activity/:id" element={<ActivityDetail />} />
+        {isTraveller && (
+          <>
+            <Route path="/new-trip" element={<NewTrip />} />
+            <Route path="/trip/:id" element={<TripDetail />} />
+            <Route path="/browse" element={<BrowseActivities />} />
+          </>
+        )}
         {!isTraveller && (
           <>
             <Route path="/new-listing" element={<NewListing />} />
