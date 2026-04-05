@@ -106,6 +106,8 @@ function EditListingForm() {
       title,
       description: description || null,
       location: location || null,
+      latitude,
+      longitude,
       price: price ? parseFloat(price) : null,
       duration_minutes: duration ? parseInt(duration) : null,
       max_participants: maxParticipants ? parseInt(maxParticipants) : null,
@@ -181,8 +183,11 @@ function EditListingForm() {
               <Textarea id="desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="loc">Location</Label>
-              <Input id="loc" value={location} onChange={(e) => setLocation(e.target.value)} />
+              <Label>Location</Label>
+              <PlacesAutocomplete
+                value={location}
+                onChange={({ name, lat, lng }) => { setLocation(name); setLatitude(lat); setLongitude(lng); }}
+              />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="space-y-2">
@@ -310,5 +315,13 @@ function EditListingForm() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function EditListing() {
+  return (
+    <GoogleMapsProvider>
+      <EditListingForm />
+    </GoogleMapsProvider>
   );
 }
