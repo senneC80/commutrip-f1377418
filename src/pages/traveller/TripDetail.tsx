@@ -5,9 +5,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, MapPin, Calendar, DollarSign, ChevronDown } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, DollarSign, ChevronDown, Star, Check } from 'lucide-react';
 import GoogleMapsProvider from '@/components/GoogleMapsProvider';
 import TripMap from '@/components/TripMap';
+import ReviewForm from '@/components/ReviewForm';
 
 interface TripStop {
   id: string;
@@ -31,6 +32,20 @@ interface Activity {
   tag_match_count: number;
   provider_name?: string;
   community_name?: string;
+}
+
+interface BookedActivity {
+  booking_id: string;
+  activity_id: string;
+  title: string;
+  location: string | null;
+  booking_date: string;
+  participants: number;
+  total_price: number | null;
+  status: string;
+  provider_id: string;
+  has_review: boolean;
+  review_rating?: number;
 }
 
 const INITIAL_SHOW = 3;
@@ -82,6 +97,64 @@ function StopRecommendations({ activities }: { activities: Activity[] }) {
   );
 }
 
+function BookedActivityCard({ booking, activityTitle, onReviewSubmitted }: {
+  booking: BookedActivity;
+  activityTitle: string;
+  onReviewSubmitted: () => void;
+}) {
+  const { user } = useAuth();
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const isPast = new Date(booking.booking_date) < new Date();
+  const canReview = isPast && !booking.has_review;
+
+  return (
+    <>
+      <div className="border-2 border-primary/30 bg-primary/5 rounded-lg p-3">
+        <div className="flex justify-between items-start">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <p className="font-medium text-sm">{activityTitle}</p>
+              <Badge className="text-[10px] px-1.5 py-0"><Check className="h-2.5 w-2.5 mr-0.5" />Booked</Badge>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {booking.booking_date} · {booking.participants} participant{booking.participants > 1 ? 's' : ''}
+            </p>
+          </div>
+          {booking.total_price != null && (
+            <span className="text-sm font-semibold flex items-center gap-0.5 shrink-0 ml-2">
+              <DollarSign className="h-3 w-3" />{booking.total_price}
+            </span>
+          )}
+        </div>
+        {booking.has_review && booking.review_rating && (
+          <div className="flex items-center gap-1 mt-1.5 text-xs">
+            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+            <span>{booking.review_rating}/5</span>
+            <span className="text-muted-foreground">Reviewed</span>
+          </div>
+        )}
+        {canReview && (
+          <Button variant="outline" size="sm" className="mt-2 text-xs h-7" onClick={() => setReviewOpen(true)}>
+            Leave Review
+          </Button>
+        )}
+      </div>
+      {user && (
+        <ReviewForm
+          bookingId={booking.booking_id}
+          activityId={booking.activity_id}
+          activityTitle={activityTitle}
+          travellerId={user.id}
+          providerId={booking.provider_id}
+          open={reviewOpen}
+          onOpenChange={setReviewOpen}
+          onReviewed={onReviewSubmitted}
+        />
+      )}
+    </>
+  );
+}
+
 function TripDetailContent() {
   const { id } = useParams<{ id: string }>();
   const { user, profile } = useAuth();
@@ -89,7 +162,9 @@ function TripDetailContent() {
   const [trip, setTrip] = useState<any>(null);
   const [stops, setStops] = useState<TripStop[]>([]);
   const [recommendations, setRecommendations] = useState<Record<string, Activity[]>>({});
+  const [bookedByStop, setBookedByStop] = useState<Record<string, BookedActivity[]>>({});
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!id || !user) return;
@@ -102,6 +177,61 @@ function TripDetailContent() {
       setStops(stopsData || []);
       setLoading(false);
 
+      // Fetch traveller's bookings
+      const { data: myBookings } = await supabase
+        .from('bookings')
+        .select('id, activity_id, booking_date, participants, total_price, status, provider_id')
+        .eq('traveller_id', user.id);
+
+      // Fetch reviews for these bookings
+      const bookingIds = myBookings?.map(b => b.id) || [];
+      let reviewMap: Record<string, number> = {};
+      if (bookingIds.length > 0) {
+        const { data: reviews } = await supabase.from('reviews').select('booking_id, rating').in('booking_id', bookingIds);
+        reviews?.forEach(r => { reviewMap[r.booking_id] = r.rating; });
+      }
+
+      // Get activity details for booked activities
+      const bookedActIds = [...new Set(myBookings?.map(b => b.activity_id) || [])];
+      let activityMap: Record<string, { title: string; location: string | null; latitude: number | null; longitude: number | null }> = {};
+      if (bookedActIds.length > 0) {
+        const { data: acts } = await supabase.from('activities').select('id, title, location, latitude, longitude').in('id', bookedActIds);
+        acts?.forEach(a => { activityMap[a.id] = a; });
+      }
+
+      // Match bookings to stops by proximity
+      const stopBookings: Record<string, BookedActivity[]> = {};
+      for (const stop of stopsData || []) {
+        if (!stop.latitude || !stop.longitude) continue;
+        const matched: BookedActivity[] = [];
+        for (const b of myBookings || []) {
+          const act = activityMap[b.activity_id];
+          if (!act || !act.latitude || !act.longitude) continue;
+          // Simple distance check (< 50km)
+          const dlat = act.latitude - stop.latitude;
+          const dlng = act.longitude - stop.longitude;
+          const approxKm = Math.sqrt(dlat * dlat + dlng * dlng) * 111;
+          if (approxKm < 50) {
+            matched.push({
+              booking_id: b.id,
+              activity_id: b.activity_id,
+              title: act.title,
+              location: act.location,
+              booking_date: b.booking_date,
+              participants: b.participants,
+              total_price: b.total_price,
+              status: b.status,
+              provider_id: b.provider_id,
+              has_review: !!reviewMap[b.id],
+              review_rating: reviewMap[b.id],
+            });
+          }
+        }
+        if (matched.length > 0) stopBookings[stop.id] = matched;
+      }
+      setBookedByStop(stopBookings);
+
+      // Fetch recommendations
       const travTags = profile?.interest_tags || [];
       const recs: Record<string, Activity[]> = {};
       for (const stop of stopsData || []) {
@@ -137,7 +267,7 @@ function TripDetailContent() {
       }
       setRecommendations(recs);
     })();
-  }, [id, user]);
+  }, [id, user, refreshKey]);
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>;
   if (!trip) return null;
@@ -151,7 +281,6 @@ function TripDetailContent() {
       {trip.description && <p className="text-muted-foreground">{trip.description}</p>}
 
       <div className="flex gap-6 items-start">
-        {/* Left: Stops + Recommendations — scrollable */}
         <div className="w-[420px] shrink-0 space-y-4 max-h-[calc(100vh-180px)] overflow-y-auto pr-2">
           {stops.length === 0 && <p className="text-muted-foreground">No stops added to this trip yet.</p>}
           {stops.map((stop, i) => (
@@ -169,7 +298,23 @@ function TripDetailContent() {
                   </p>
                 )}
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-3">
+                {/* Booked activities */}
+                {bookedByStop[stop.id] && bookedByStop[stop.id].length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-primary">Your Bookings</p>
+                    {bookedByStop[stop.id].map((b) => (
+                      <BookedActivityCard
+                        key={b.booking_id}
+                        booking={b}
+                        activityTitle={b.title}
+                        onReviewSubmitted={() => setRefreshKey(k => k + 1)}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* Recommendations */}
                 {recommendations[stop.id] && recommendations[stop.id].length > 0 ? (
                   <StopRecommendations activities={recommendations[stop.id]} />
                 ) : (
@@ -180,7 +325,6 @@ function TripDetailContent() {
           ))}
         </div>
 
-        {/* Right: Map — fills remaining space, sticky */}
         <div className="flex-1 min-w-0 sticky top-4">
           <TripMap stops={stops} className="h-[calc(100vh-180px)] w-full rounded-lg overflow-hidden shadow-card" />
         </div>

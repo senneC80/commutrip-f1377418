@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, MapPin, Clock, Users, DollarSign, Calendar } from 'lucide-react';
 import GoogleMapsProvider from '@/components/GoogleMapsProvider';
 import ActivityMap from '@/components/ActivityMap';
+import BookingModal from '@/components/BookingModal';
+import ReviewsList from '@/components/ReviewsList';
 
 interface ActivityData {
   id: string;
@@ -32,12 +35,14 @@ interface ActivityData {
 
 function ActivityDetailContent() {
   const { id } = useParams<{ id: string }>();
+  const { user, role } = useAuth();
   const navigate = useNavigate();
   const [activity, setActivity] = useState<ActivityData | null>(null);
   const [providerName, setProviderName] = useState('');
   const [communityName, setCommunityName] = useState<string | null>(null);
   const [communityId, setCommunityId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [bookingOpen, setBookingOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -62,6 +67,8 @@ function ActivityDetailContent() {
   if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>;
   if (!activity) return null;
 
+  const isTraveller = role === 'traveller';
+
   return (
     <div className="max-w-3xl mx-auto space-y-4">
       <Button variant="ghost" onClick={() => navigate(-1)} className="gap-2 text-muted-foreground">
@@ -84,7 +91,6 @@ function ActivityDetailContent() {
         <CardContent className="space-y-5">
           {activity.description && <p className="text-foreground">{activity.description}</p>}
 
-          {/* Map */}
           {activity.latitude && activity.longitude && (
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -94,7 +100,6 @@ function ActivityDetailContent() {
             </div>
           )}
 
-          {/* Details grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {activity.price != null && (
               <div className="flex items-center gap-2">
@@ -134,7 +139,6 @@ function ActivityDetailContent() {
             )}
           </div>
 
-          {/* Schedule */}
           <div className="space-y-2">
             <p className="text-sm font-medium">Schedule</p>
             {activity.recurrence_type === 'one-time' ? (
@@ -158,7 +162,6 @@ function ActivityDetailContent() {
             )}
           </div>
 
-          {/* Tags */}
           {activity.interest_tags && activity.interest_tags.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {activity.interest_tags.map((tag) => (
@@ -167,16 +170,23 @@ function ActivityDetailContent() {
             </div>
           )}
 
-          {/* Reviews placeholder */}
-          <div className="border-t pt-4">
-            <h3 className="font-heading font-semibold mb-2">Reviews</h3>
-            <p className="text-sm text-muted-foreground">No reviews yet. Reviews will appear here after travellers complete this activity.</p>
-          </div>
+          <ReviewsList activityId={activity.id} />
 
-          {/* Book button */}
-          <Button className="w-full" disabled>Booking coming soon</Button>
+          {isTraveller && (
+            <Button className="w-full" onClick={() => setBookingOpen(true)}>
+              Book This Activity
+            </Button>
+          )}
         </CardContent>
       </Card>
+
+      {activity && (
+        <BookingModal
+          activity={activity}
+          open={bookingOpen}
+          onOpenChange={setBookingOpen}
+        />
+      )}
     </div>
   );
 }
