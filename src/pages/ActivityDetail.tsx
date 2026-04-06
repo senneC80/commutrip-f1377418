@@ -35,7 +35,7 @@ interface ActivityData {
 
 function ActivityDetailContent() {
   const { id } = useParams<{ id: string }>();
-  const { user, role } = useAuth();
+  const { role } = useAuth();
   const navigate = useNavigate();
   const [activity, setActivity] = useState<ActivityData | null>(null);
   const [providerName, setProviderName] = useState('');

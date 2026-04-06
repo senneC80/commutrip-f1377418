@@ -172,12 +172,62 @@ export default function CommunityPage() {
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>;
 
+  // Community metrics
+  const [avgRating, setAvgRating] = useState<number | null>(null);
+  const [totalBookings, setTotalBookings] = useState(0);
+
+  useEffect(() => {
+    if (!myCommunity || view !== 'manage') return;
+    (async () => {
+      // Get all member provider_ids
+      const providerIds = members.map(m => m.provider_id);
+      if (providerIds.length === 0) return;
+
+      // Get all activities by these providers
+      const { data: acts } = await supabase.from('activities').select('id').in('provider_id', providerIds);
+      const actIds = acts?.map(a => a.id) || [];
+      if (actIds.length === 0) return;
+
+      // Count bookings
+      const { count } = await supabase.from('bookings').select('id', { count: 'exact', head: true }).in('activity_id', actIds);
+      setTotalBookings(count || 0);
+
+      // Avg review score
+      const { data: reviews } = await supabase.from('reviews').select('rating').in('activity_id', actIds);
+      if (reviews && reviews.length > 0) {
+        setAvgRating(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length);
+      }
+    })();
+  }, [myCommunity, members, view]);
+
   // Manager view
   if (view === 'manage' && myCommunity) {
     return (
       <div>
         <h1 className="text-2xl font-heading font-bold mb-2">{myCommunity.name}</h1>
         {myCommunity.description && <p className="text-muted-foreground mb-6">{myCommunity.description}</p>}
+
+        {/* Aggregate metrics */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+          <Card className="shadow-card">
+            <CardContent className="py-4 text-center">
+              <p className="text-2xl font-bold">{members.length}</p>
+              <p className="text-xs text-muted-foreground">Members</p>
+            </CardContent>
+          </Card>
+          <Card className="shadow-card">
+            <CardContent className="py-4 text-center">
+              <p className="text-2xl font-bold">{totalBookings}</p>
+              <p className="text-xs text-muted-foreground">Total Bookings</p>
+            </CardContent>
+          </Card>
+          <Card className="shadow-card">
+            <CardContent className="py-4 text-center">
+              <p className="text-2xl font-bold">{avgRating != null ? avgRating.toFixed(1) : '—'}</p>
+              <p className="text-xs text-muted-foreground">Avg Rating</p>
+            </CardContent>
+          </Card>
+        </div>
 
         <div className="grid gap-6 md:grid-cols-2">
           <Card className="shadow-card">
