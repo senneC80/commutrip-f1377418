@@ -93,6 +93,7 @@ export type Database = {
         Row: {
           activity_id: string
           booking_date: string
+          commission_amount: number | null
           created_at: string
           id: string
           participants: number
@@ -104,6 +105,7 @@ export type Database = {
         Insert: {
           activity_id: string
           booking_date: string
+          commission_amount?: number | null
           created_at?: string
           id?: string
           participants?: number
@@ -115,6 +117,7 @@ export type Database = {
         Update: {
           activity_id?: string
           booking_date?: string
+          commission_amount?: number | null
           created_at?: string
           id?: string
           participants?: number
@@ -230,6 +233,54 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      reviews: {
+        Row: {
+          activity_id: string
+          booking_id: string
+          comment: string | null
+          created_at: string
+          id: string
+          provider_id: string
+          rating: number
+          traveller_id: string
+        }
+        Insert: {
+          activity_id: string
+          booking_id: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          provider_id: string
+          rating: number
+          traveller_id: string
+        }
+        Update: {
+          activity_id?: string
+          booking_id?: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          provider_id?: string
+          rating?: number
+          traveller_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       trip_stops: {
         Row: {
