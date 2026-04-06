@@ -53,6 +53,23 @@ export default function CommunityPage() {
   const [avgRating, setAvgRating] = useState<number | null>(null);
   const [totalBookings, setTotalBookings] = useState(0);
 
+  useEffect(() => {
+    if (!myCommunity || view !== 'manage') return;
+    (async () => {
+      const providerIds = members.map(m => m.provider_id);
+      if (providerIds.length === 0) return;
+      const { data: acts } = await supabase.from('activities').select('id').in('provider_id', providerIds);
+      const actIds = acts?.map(a => a.id) || [];
+      if (actIds.length === 0) return;
+      const { count } = await supabase.from('bookings').select('id', { count: 'exact', head: true }).in('activity_id', actIds);
+      setTotalBookings(count || 0);
+      const { data: reviews } = await supabase.from('reviews').select('rating').in('activity_id', actIds);
+      if (reviews && reviews.length > 0) {
+        setAvgRating(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length);
+      }
+    })();
+  }, [myCommunity, members, view]);
+
   const fetchMyStatus = async () => {
     if (!user) return;
     setLoading(true);
