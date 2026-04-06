@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, MapPin, Calendar, DollarSign } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, DollarSign, ChevronDown } from 'lucide-react';
 import GoogleMapsProvider from '@/components/GoogleMapsProvider';
 import TripMap from '@/components/TripMap';
 
@@ -33,6 +33,55 @@ interface Activity {
   community_name?: string;
 }
 
+const INITIAL_SHOW = 3;
+
+function StopRecommendations({ activities }: { activities: Activity[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? activities : activities.slice(0, INITIAL_SHOW);
+  const hasMore = activities.length > INITIAL_SHOW;
+
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-medium text-muted-foreground">Recommended Activities</p>
+      {visible.map((act) => (
+        <Link key={act.id} to={`/dashboard/activity/${act.id}`} className="block">
+          <div className="border rounded-lg p-3 hover:shadow-card-hover transition-shadow cursor-pointer">
+            <div className="flex justify-between items-start">
+              <div className="min-w-0 flex-1">
+                <p className="font-medium text-sm">{act.title}</p>
+                <p className="text-xs text-muted-foreground">{act.provider_name}{act.community_name ? ` · ${act.community_name}` : ''}</p>
+              </div>
+              {act.price != null && (
+                <span className="text-sm font-semibold flex items-center gap-0.5 shrink-0 ml-2">
+                  <DollarSign className="h-3 w-3" />{act.price}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
+              <MapPin className="h-3 w-3 shrink-0" />
+              <span className="truncate">{act.location || 'Unknown location'}</span>
+              <span className="shrink-0">· {act.distance_km < 1 ? `${Math.round(act.distance_km * 1000)}m` : `${act.distance_km.toFixed(1)}km`}</span>
+            </div>
+            {act.interest_tags && act.interest_tags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {act.interest_tags.slice(0, 4).map((tag) => (
+                  <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0">{tag}</Badge>
+                ))}
+              </div>
+            )}
+          </div>
+        </Link>
+      ))}
+      {hasMore && !expanded && (
+        <Button variant="ghost" size="sm" className="w-full text-xs gap-1" onClick={() => setExpanded(true)}>
+          <ChevronDown className="h-3 w-3" />
+          Show {activities.length - INITIAL_SHOW} more
+        </Button>
+      )}
+    </div>
+  );
+}
+
 function TripDetailContent() {
   const { id } = useParams<{ id: string }>();
   const { user, profile } = useAuth();
@@ -53,7 +102,6 @@ function TripDetailContent() {
       setStops(stopsData || []);
       setLoading(false);
 
-      // Fetch recommendations for each stop
       const travTags = profile?.interest_tags || [];
       const recs: Record<string, Activity[]> = {};
       for (const stop of stopsData || []) {
@@ -66,7 +114,6 @@ function TripDetailContent() {
           _traveller_tags: travTags,
         });
         if (data && data.length > 0) {
-          // Fetch provider names
           const providerIds = [...new Set(data.map((a: any) => a.provider_id))];
           const { data: profiles } = await supabase.from('profiles').select('user_id, first_name, last_name').in('user_id', providerIds);
           const { data: members } = await supabase.from('community_members').select('provider_id, community_id, status').in('provider_id', providerIds).eq('status', 'accepted');
@@ -103,9 +150,9 @@ function TripDetailContent() {
       <h1 className="text-2xl font-heading font-bold">{trip.title}</h1>
       {trip.description && <p className="text-muted-foreground">{trip.description}</p>}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left: Stops + Recommendations */}
-        <div className="space-y-4">
+      <div className="flex gap-6 items-start">
+        {/* Left: Stops + Recommendations — scrollable */}
+        <div className="w-[420px] shrink-0 space-y-4 max-h-[calc(100vh-180px)] overflow-y-auto pr-2">
           {stops.length === 0 && <p className="text-muted-foreground">No stops added to this trip yet.</p>}
           {stops.map((stop, i) => (
             <Card key={stop.id} className="shadow-card">
@@ -124,33 +171,7 @@ function TripDetailContent() {
               </CardHeader>
               <CardContent>
                 {recommendations[stop.id] && recommendations[stop.id].length > 0 ? (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Recommended Activities</p>
-                    {recommendations[stop.id].map((act) => (
-                      <Link key={act.id} to={`/dashboard/activity/${act.id}`} className="block">
-                        <div className="border rounded-lg p-3 hover:shadow-card-hover transition-shadow cursor-pointer">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="font-medium text-sm">{act.title}</p>
-                              <p className="text-xs text-muted-foreground">{act.provider_name}{act.community_name ? ` · ${act.community_name}` : ''}</p>
-                            </div>
-                            {act.price != null && (
-                              <span className="text-sm font-semibold flex items-center gap-0.5">
-                                <DollarSign className="h-3 w-3" />{act.price}
-                              </span>
-                            )}
-                          </div>
-                          {act.interest_tags && act.interest_tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {act.interest_tags.slice(0, 4).map((tag) => (
-                                <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0">{tag}</Badge>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
+                  <StopRecommendations activities={recommendations[stop.id]} />
                 ) : (
                   <p className="text-sm text-muted-foreground">No activities found near this stop.</p>
                 )}
@@ -159,9 +180,9 @@ function TripDetailContent() {
           ))}
         </div>
 
-        {/* Right: Map */}
-        <div className="sticky top-4">
-          <TripMap stops={stops} className="h-[500px] w-full rounded-lg overflow-hidden shadow-card" />
+        {/* Right: Map — fills remaining space, sticky */}
+        <div className="flex-1 min-w-0 sticky top-4">
+          <TripMap stops={stops} className="h-[calc(100vh-180px)] w-full rounded-lg overflow-hidden shadow-card" />
         </div>
       </div>
     </div>
