@@ -49,6 +49,10 @@ export default function CommunityPage() {
   const [allCommunities, setAllCommunities] = useState<Community[]>([]);
   const [joiningId, setJoiningId] = useState<string | null>(null);
 
+  // Community metrics
+  const [avgRating, setAvgRating] = useState<number | null>(null);
+  const [totalBookings, setTotalBookings] = useState(0);
+
   const fetchMyStatus = async () => {
     if (!user) return;
     setLoading(true);
