@@ -193,34 +193,6 @@ export default function CommunityPage() {
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>;
 
-  // Community metrics
-  const [avgRating, setAvgRating] = useState<number | null>(null);
-  const [totalBookings, setTotalBookings] = useState(0);
-
-  useEffect(() => {
-    if (!myCommunity || view !== 'manage') return;
-    (async () => {
-      // Get all member provider_ids
-      const providerIds = members.map(m => m.provider_id);
-      if (providerIds.length === 0) return;
-
-      // Get all activities by these providers
-      const { data: acts } = await supabase.from('activities').select('id').in('provider_id', providerIds);
-      const actIds = acts?.map(a => a.id) || [];
-      if (actIds.length === 0) return;
-
-      // Count bookings
-      const { count } = await supabase.from('bookings').select('id', { count: 'exact', head: true }).in('activity_id', actIds);
-      setTotalBookings(count || 0);
-
-      // Avg review score
-      const { data: reviews } = await supabase.from('reviews').select('rating').in('activity_id', actIds);
-      if (reviews && reviews.length > 0) {
-        setAvgRating(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length);
-      }
-    })();
-  }, [myCommunity, members, view]);
-
   // Manager view
   if (view === 'manage' && myCommunity) {
     return (
