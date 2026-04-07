@@ -185,6 +185,9 @@ function ActivityDetailContent() {
           activity={activity}
           open={bookingOpen}
           onOpenChange={setBookingOpen}
+          onBooked={() => {
+            setTimeout(() => navigate(-1), 1500);
+          }}
         />
       )}
     </div>
