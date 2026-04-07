@@ -26,7 +26,14 @@ interface Activity {
   provider_id: string;
 }
 
-const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAY_NAMES_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAY_NAMES_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+const dayToIndex = (day: string): number => {
+  const idx = DAY_NAMES_FULL.indexOf(day);
+  if (idx >= 0) return idx;
+  return DAY_NAMES_ABBR.indexOf(day);
+};
 
 export default function BookingModal({ activity, open, onOpenChange, onBooked }: {
   activity: Activity;
@@ -56,7 +63,7 @@ export default function BookingModal({ activity, open, onOpenChange, onBooked }:
       };
     }
     // recurring
-    const allowedDays = (activity.schedule_days || []).map(day => DAY_NAMES.indexOf(day)).filter(i => i >= 0);
+    const allowedDays = (activity.schedule_days || []).map(day => dayToIndex(day)).filter(i => i >= 0);
     const from = activity.available_from ? parseISO(activity.available_from) : null;
     const until = activity.available_until ? parseISO(activity.available_until) : null;
     return (d: Date) => {
