@@ -19,10 +19,12 @@ import Community from '@/pages/provider/Community';
 import Profile from '@/pages/Profile';
 import Messages from '@/pages/Messages';
 import ActivityDetail from '@/pages/ActivityDetail';
+import ProviderProfile from '@/pages/ProviderProfile';
+import PublicCommunity from '@/pages/PublicCommunity';
 
 const travellerNav = [
   { title: 'My Trips', url: '/dashboard', icon: MapPin },
-  { title: 'Browse Activities', url: '/dashboard/browse', icon: Search },
+  { title: 'Browse', url: '/dashboard/browse', icon: Search },
   { title: 'My Profile', url: '/dashboard/profile', icon: User },
   { title: 'Messages', url: '/dashboard/messages', icon: MessageSquare },
 ];
@@ -52,6 +54,8 @@ export default function Dashboard() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/messages" element={<Messages />} />
         <Route path="/activity/:id" element={<ActivityDetail />} />
+        <Route path="/provider-profile/:id" element={<ProviderProfile />} />
+        <Route path="/community/:id" element={<PublicCommunity />} />
         {isTraveller && (
           <>
             <Route path="/new-trip" element={<NewTrip />} />
