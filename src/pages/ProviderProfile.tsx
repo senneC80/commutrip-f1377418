@@ -34,10 +34,15 @@ interface CommunityInfo {
 
 export default function ProviderProfile() {
   const { id } = useParams<{ id: string }>();
+  const { user, role } = useAuth();
+  const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [community, setCommunity] = useState<CommunityInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [msgOpen, setMsgOpen] = useState(false);
+  const [msgText, setMsgText] = useState('');
+  const [msgSending, setMsgSending] = useState(false);
 
   useEffect(() => {
     if (!id) return;
