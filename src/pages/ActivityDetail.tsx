@@ -5,11 +5,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, MapPin, Clock, Users, DollarSign, Calendar } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, Users, DollarSign, Calendar, MessageSquare } from 'lucide-react';
 import GoogleMapsProvider from '@/components/GoogleMapsProvider';
 import ActivityMap from '@/components/ActivityMap';
 import BookingModal from '@/components/BookingModal';
 import ReviewsList from '@/components/ReviewsList';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
 
 interface ActivityData {
   id: string;
@@ -43,6 +46,10 @@ function ActivityDetailContent() {
   const [communityId, setCommunityId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [bookingOpen, setBookingOpen] = useState(false);
+  const [msgOpen, setMsgOpen] = useState(false);
+  const [msgText, setMsgText] = useState('');
+  const [msgSending, setMsgSending] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!id) return;
@@ -173,12 +180,54 @@ function ActivityDetailContent() {
           <ReviewsList activityId={activity.id} />
 
           {isTraveller && (
-            <Button className="w-full" onClick={() => setBookingOpen(true)}>
-              Book This Activity
-            </Button>
+            <div className="flex gap-2">
+              <Button className="flex-1" onClick={() => setBookingOpen(true)}>
+                Book This Activity
+              </Button>
+              <Button variant="outline" className="gap-2" onClick={() => setMsgOpen(true)}>
+                <MessageSquare className="h-4 w-4" /> Message Provider
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Message Provider Modal */}
+      <Dialog open={msgOpen} onOpenChange={setMsgOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Message {providerName}</DialogTitle>
+          </DialogHeader>
+          <Textarea
+            value={msgText}
+            onChange={e => setMsgText(e.target.value)}
+            placeholder={`Ask about "${activity.title}"…`}
+            className="min-h-[100px]"
+          />
+          <Button
+            disabled={msgSending || !msgText.trim()}
+            onClick={async () => {
+              if (!user) return;
+              setMsgSending(true);
+              const { error } = await supabase.from('messages').insert({
+                sender_id: user.id,
+                receiver_id: activity.provider_id,
+                content: msgText.trim(),
+              });
+              setMsgSending(false);
+              if (error) {
+                toast({ title: 'Error', description: error.message, variant: 'destructive' });
+              } else {
+                toast({ title: 'Message sent!' });
+                setMsgText('');
+                setMsgOpen(false);
+              }
+            }}
+          >
+            {msgSending ? 'Sending…' : 'Send Message'}
+          </Button>
+        </DialogContent>
+      </Dialog>
 
       {activity && (
         <BookingModal
