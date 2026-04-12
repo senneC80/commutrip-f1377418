@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, DollarSign, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { MapPin, DollarSign, Users, MessageSquare } from 'lucide-react';
 
 interface Profile {
   first_name: string;
@@ -29,10 +34,15 @@ interface CommunityInfo {
 
 export default function ProviderProfile() {
   const { id } = useParams<{ id: string }>();
+  const { user, role } = useAuth();
+  const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [community, setCommunity] = useState<CommunityInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [msgOpen, setMsgOpen] = useState(false);
+  const [msgText, setMsgText] = useState('');
+  const [msgSending, setMsgSending] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -84,8 +94,50 @@ export default function ProviderProfile() {
               {profile.interest_tags.map(t => <Badge key={t} variant="secondary" className="text-xs">{t}</Badge>)}
             </div>
           )}
+          {role === 'traveller' && id !== user?.id && (
+            <Button variant="outline" className="gap-2" onClick={() => setMsgOpen(true)}>
+              <MessageSquare className="h-4 w-4" /> Message Provider
+            </Button>
+          )}
         </CardContent>
       </Card>
+
+      {/* Message Modal */}
+      <Dialog open={msgOpen} onOpenChange={setMsgOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Message {name}</DialogTitle>
+          </DialogHeader>
+          <Textarea
+            value={msgText}
+            onChange={e => setMsgText(e.target.value)}
+            placeholder="Write your message…"
+            className="min-h-[100px]"
+          />
+          <Button
+            disabled={msgSending || !msgText.trim()}
+            onClick={async () => {
+              if (!user || !id) return;
+              setMsgSending(true);
+              const { error } = await supabase.from('messages').insert({
+                sender_id: user.id,
+                receiver_id: id,
+                content: msgText.trim(),
+              });
+              setMsgSending(false);
+              if (error) {
+                toast({ title: 'Error', description: error.message, variant: 'destructive' });
+              } else {
+                toast({ title: 'Message sent!' });
+                setMsgText('');
+                setMsgOpen(false);
+              }
+            }}
+          >
+            {msgSending ? 'Sending…' : 'Send Message'}
+          </Button>
+        </DialogContent>
+      </Dialog>
 
       <div>
         <h2 className="text-lg font-heading font-semibold mb-3">Active Listings ({activities.length})</h2>
