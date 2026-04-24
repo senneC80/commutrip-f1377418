@@ -94,6 +94,7 @@ export type Database = {
           activity_id: string
           booking_date: string
           commission_amount: number | null
+          completed_at: string | null
           created_at: string
           id: string
           participants: number
@@ -101,11 +102,13 @@ export type Database = {
           status: string
           total_price: number | null
           traveller_id: string
+          voluntary_contribution_amount: number
         }
         Insert: {
           activity_id: string
           booking_date: string
           commission_amount?: number | null
+          completed_at?: string | null
           created_at?: string
           id?: string
           participants?: number
@@ -113,11 +116,13 @@ export type Database = {
           status?: string
           total_price?: number | null
           traveller_id: string
+          voluntary_contribution_amount?: number
         }
         Update: {
           activity_id?: string
           booking_date?: string
           commission_amount?: number | null
+          completed_at?: string | null
           created_at?: string
           id?: string
           participants?: number
@@ -125,6 +130,7 @@ export type Database = {
           status?: string
           total_price?: number | null
           traveller_id?: string
+          voluntary_contribution_amount?: number
         }
         Relationships: [
           {
@@ -163,6 +169,42 @@ export type Database = {
           location?: string | null
           manager_id?: string
           name?: string
+        }
+        Relationships: []
+      }
+      community_funds: {
+        Row: {
+          community_id: string
+          created_at: string
+          currency: string
+          description: string
+          id: string
+          purpose: string
+          show_history_publicly: boolean
+          target_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          community_id: string
+          created_at?: string
+          currency?: string
+          description: string
+          id?: string
+          purpose: string
+          show_history_publicly?: boolean
+          target_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          community_id?: string
+          created_at?: string
+          currency?: string
+          description?: string
+          id?: string
+          purpose?: string
+          show_history_publicly?: boolean
+          target_amount?: number | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -246,6 +288,86 @@ export type Database = {
         }
         Relationships: []
       }
+      fund_contributions: {
+        Row: {
+          amount: number
+          booking_id: string | null
+          contributor_id: string
+          created_at: string
+          currency: string
+          fund_id: string
+          id: string
+          source_type: string
+        }
+        Insert: {
+          amount: number
+          booking_id?: string | null
+          contributor_id: string
+          created_at?: string
+          currency?: string
+          fund_id: string
+          id?: string
+          source_type: string
+        }
+        Update: {
+          amount?: number
+          booking_id?: string | null
+          contributor_id?: string
+          created_at?: string
+          currency?: string
+          fund_id?: string
+          id?: string
+          source_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fund_contributions_fund_id_fkey"
+            columns: ["fund_id"]
+            isOneToOne: false
+            referencedRelation: "community_funds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      impact_reports: {
+        Row: {
+          author_id: string
+          body: string
+          community_id: string
+          created_at: string
+          id: string
+          metrics: Json
+          published_at: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          community_id: string
+          created_at?: string
+          id?: string
+          metrics?: Json
+          published_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          community_id?: string
+          created_at?: string
+          id?: string
+          metrics?: Json
+          published_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -306,6 +428,36 @@ export type Database = {
           last_name?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      provider_pledges: {
+        Row: {
+          community_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          pledge_percentage: number
+          provider_id: string
+          updated_at: string
+        }
+        Insert: {
+          community_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          pledge_percentage: number
+          provider_id: string
+          updated_at?: string
+        }
+        Update: {
+          community_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          pledge_percentage?: number
+          provider_id?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -461,6 +613,7 @@ export type Database = {
     }
     Functions: {
       earth: { Args: never; Returns: number }
+      get_fund_balance: { Args: { _fund_id: string }; Returns: number }
       get_recommended_activities: {
         Args: {
           _arrival_date: string
