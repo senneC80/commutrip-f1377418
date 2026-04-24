@@ -198,6 +198,54 @@ export type Database = {
           },
         ]
       }
+      community_verifications: {
+        Row: {
+          certifications: string | null
+          community_id: string
+          created_at: string
+          decided_at: string | null
+          id: string
+          narrative: string
+          ownership_type: string
+          revenue_distribution: string
+          reviewer_id: string | null
+          reviewer_notes: string | null
+          status: Database["public"]["Enums"]["verification_status"]
+          submitter_id: string
+          updated_at: string
+        }
+        Insert: {
+          certifications?: string | null
+          community_id: string
+          created_at?: string
+          decided_at?: string | null
+          id?: string
+          narrative: string
+          ownership_type: string
+          revenue_distribution: string
+          reviewer_id?: string | null
+          reviewer_notes?: string | null
+          status?: Database["public"]["Enums"]["verification_status"]
+          submitter_id: string
+          updated_at?: string
+        }
+        Update: {
+          certifications?: string | null
+          community_id?: string
+          created_at?: string
+          decided_at?: string | null
+          id?: string
+          narrative?: string
+          ownership_type?: string
+          revenue_distribution?: string
+          reviewer_id?: string | null
+          reviewer_notes?: string | null
+          status?: Database["public"]["Enums"]["verification_status"]
+          submitter_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -454,9 +502,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_community_verified: {
+        Args: { _community_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "traveller" | "provider" | "admin"
+      verification_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -585,6 +638,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["traveller", "provider", "admin"],
+      verification_status: ["pending", "approved", "rejected"],
     },
   },
 } as const
