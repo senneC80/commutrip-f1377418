@@ -362,3 +362,66 @@ export default function CommunityPage() {
     </div>
   );
 }
+
+interface BrowseProps {
+  allCommunities: Community[];
+  currentUserId?: string;
+  myMembership: { community_id: string; status: string } | null;
+  joiningId: string | null;
+  onBack: () => void;
+  onJoin: (id: string) => void;
+  onOpen: (id: string) => void;
+}
+
+function BrowseCommunitiesView({ allCommunities, currentUserId, myMembership, joiningId, onBack, onJoin, onOpen }: BrowseProps) {
+  const { verifiedIds } = useVerifiedCommunities();
+  return (
+    <div>
+      <Button variant="ghost" onClick={onBack} className="mb-4 gap-2 text-muted-foreground">
+        <ArrowLeft className="h-4 w-4" /> Back
+      </Button>
+      <h1 className="text-2xl font-heading font-bold mb-6">Browse Communities</h1>
+      {allCommunities.length === 0 ? (
+        <Card className="shadow-card">
+          <CardContent className="py-12 text-center">
+            <p className="text-muted-foreground">No communities yet. Be the first to create one!</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {allCommunities.map((c) => (
+            <Card
+              key={c.id}
+              className="shadow-card hover:shadow-card-hover transition-shadow cursor-pointer group"
+              onClick={() => onOpen(c.id)}
+            >
+              <CardHeader>
+                <CardTitle className="text-lg group-hover:text-primary transition-colors flex items-center gap-2">
+                  {c.name}
+                  {verifiedIds.has(c.id) && <VerifiedBadge size="sm" />}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {c.description && <p className="text-sm text-muted-foreground mb-3">{c.description}</p>}
+                {c.manager_id === currentUserId ? (
+                  <Badge>Your Community</Badge>
+                ) : myMembership?.community_id === c.id ? (
+                  <Badge variant="secondary">{myMembership.status === 'accepted' ? 'Member' : 'Pending'}</Badge>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={(e) => { e.stopPropagation(); onJoin(c.id); }}
+                    disabled={joiningId === c.id}
+                  >
+                    {joiningId === c.id ? 'Sending…' : 'Request to Join'}
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
