@@ -48,11 +48,13 @@ export default function MyListings() {
       if (acts) setActivities(acts);
 
       // Fetch bookings for my activities
+      const today = new Date().toISOString().split('T')[0];
       const { data: bks } = await supabase
         .from('bookings')
         .select('id, activity_id, booking_date, participants, total_price, status, traveller_id')
         .eq('provider_id', user.id)
-        .order('created_at', { ascending: false });
+        .gte('booking_date', today)
+        .order('booking_date', { ascending: true });
 
       if (bks && bks.length > 0) {
         const travIds = [...new Set(bks.map(b => b.traveller_id))];
