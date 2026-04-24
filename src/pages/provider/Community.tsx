@@ -328,48 +328,16 @@ export default function CommunityPage() {
 
   // Browse view
   if (view === 'browse') {
-    return (
-      <div>
-        <Button variant="ghost" onClick={() => setView('home')} className="mb-4 gap-2 text-muted-foreground">
-          <ArrowLeft className="h-4 w-4" /> Back
-        </Button>
-        <h1 className="text-2xl font-heading font-bold mb-6">Browse Communities</h1>
-        {allCommunities.length === 0 ? (
-          <Card className="shadow-card">
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">No communities yet. Be the first to create one!</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {allCommunities.map((c) => (
-              <Card
-                key={c.id}
-                className="shadow-card hover:shadow-card-hover transition-shadow cursor-pointer group"
-                onClick={() => navigate(`/dashboard/community/${c.id}`)}
-              >
-                <CardHeader><CardTitle className="text-lg group-hover:text-primary transition-colors">{c.name}</CardTitle></CardHeader>
-                <CardContent>
-                  {c.description && <p className="text-sm text-muted-foreground mb-3">{c.description}</p>}
-                  {c.manager_id === user?.id ? (
-                    <Badge>Your Community</Badge>
-                  ) : myMembership?.community_id === c.id ? (
-                    <Badge variant="secondary">{myMembership.status === 'accepted' ? 'Member' : 'Pending'}</Badge>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => { e.stopPropagation(); handleJoin(c.id); }}
-                      disabled={joiningId === c.id}
-                    >
-                      {joiningId === c.id ? 'Sending…' : 'Request to Join'}
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+    return <BrowseCommunitiesView
+      allCommunities={allCommunities}
+      currentUserId={user?.id}
+      myMembership={myMembership}
+      joiningId={joiningId}
+      onBack={() => setView('home')}
+      onJoin={handleJoin}
+      onOpen={(id) => navigate(`/dashboard/community/${id}`)}
+    />;
+  }
       </div>
     );
   }
