@@ -7,7 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
 import { MapPin, DollarSign, Users } from 'lucide-react';
+import VerifiedBadge from '@/components/VerifiedBadge';
+import { useVerifiedCommunities } from '@/hooks/useVerifiedCommunities';
 
 const ALL_TAGS = [
   'Culinary', 'Nature', 'Crafts', 'Heritage', 'Adventure',
@@ -41,6 +44,8 @@ export default function Browse() {
   const [locationFilter, setLocationFilter] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState([0, 500]);
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const { verifiedIds } = useVerifiedCommunities();
 
   useEffect(() => {
     (async () => {
@@ -95,9 +100,15 @@ export default function Browse() {
       if (locationFilter && !(a.location || '').toLowerCase().includes(locationFilter.toLowerCase())) return false;
       if (selectedTags.length > 0 && !selectedTags.some(t => a.interest_tags?.includes(t))) return false;
       if (a.price != null && (a.price < priceRange[0] || a.price > priceRange[1])) return false;
+      if (verifiedOnly && (!a.community_id || !verifiedIds.has(a.community_id))) return false;
       return true;
     });
-  }, [activities, locationFilter, selectedTags, priceRange]);
+  }, [activities, locationFilter, selectedTags, priceRange, verifiedOnly, verifiedIds]);
+
+  const filteredCommunities = useMemo(
+    () => verifiedOnly ? communities.filter(c => verifiedIds.has(c.id)) : communities,
+    [communities, verifiedOnly, verifiedIds],
+  );
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>;
 
