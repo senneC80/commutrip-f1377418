@@ -5,7 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Package, Clock, DollarSign, MapPin, CalendarDays, Users } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Plus, Package, Clock, DollarSign, MapPin, CalendarDays, Users, Check } from 'lucide-react';
 
 interface Activity {
   id: string;
@@ -32,56 +33,70 @@ interface Booking {
 
 export default function MyListings() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [marking, setMarking] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadData = async () => {
     if (!user) return;
-    (async () => {
-      const { data: acts } = await supabase
-        .from('activities')
-        .select('id, title, description, location, price, currency, duration_minutes, is_active, interest_tags')
-        .eq('provider_id', user.id)
-        .order('created_at', { ascending: false });
-      if (acts) setActivities(acts);
+    const { data: acts } = await supabase
+      .from('activities')
+      .select('id, title, description, location, price, currency, duration_minutes, is_active, interest_tags')
+      .eq('provider_id', user.id)
+      .order('created_at', { ascending: false });
+    if (acts) setActivities(acts);
 
-      // Fetch bookings for my activities
-      const today = new Date().toISOString().split('T')[0];
-      const { data: bks } = await supabase
-        .from('bookings')
-        .select('id, activity_id, booking_date, participants, total_price, status, traveller_id')
-        .eq('provider_id', user.id)
-        .gte('booking_date', today)
-        .order('booking_date', { ascending: true });
+    // Fetch all bookings for my activities (past + upcoming) so providers can mark past ones complete
+    const { data: bks } = await supabase
+      .from('bookings')
+      .select('id, activity_id, booking_date, participants, total_price, status, traveller_id')
+      .eq('provider_id', user.id)
+      .order('booking_date', { ascending: false });
 
-      if (bks && bks.length > 0) {
-        const travIds = [...new Set(bks.map(b => b.traveller_id))];
-        const actIds = [...new Set(bks.map(b => b.activity_id))];
-        const [{ data: profiles }, { data: actData }] = await Promise.all([
-          supabase.from('profiles').select('user_id, first_name, last_name').in('user_id', travIds),
-          supabase.from('activities').select('id, title').in('id', actIds),
-        ]);
-        const nameMap: Record<string, string> = {};
-        profiles?.forEach(p => { nameMap[p.user_id] = `${p.first_name} ${p.last_name}`.trim(); });
-        const titleMap: Record<string, string> = {};
-        actData?.forEach(a => { titleMap[a.id] = a.title; });
+    if (bks && bks.length > 0) {
+      const travIds = [...new Set(bks.map(b => b.traveller_id))];
+      const actIds = [...new Set(bks.map(b => b.activity_id))];
+      const [{ data: profiles }, { data: actData }] = await Promise.all([
+        supabase.from('profiles').select('user_id, first_name, last_name').in('user_id', travIds),
+        supabase.from('activities').select('id, title').in('id', actIds),
+      ]);
+      const nameMap: Record<string, string> = {};
+      profiles?.forEach(p => { nameMap[p.user_id] = `${p.first_name} ${p.last_name}`.trim(); });
+      const titleMap: Record<string, string> = {};
+      actData?.forEach(a => { titleMap[a.id] = a.title; });
 
-        setBookings(bks.map(b => ({
-          id: b.id,
-          activity_id: b.activity_id,
-          activity_title: titleMap[b.activity_id] || 'Activity',
-          traveller_name: nameMap[b.traveller_id] || 'Traveller',
-          booking_date: b.booking_date,
-          participants: b.participants,
-          total_price: b.total_price,
-          status: b.status,
-        })));
-      }
-      setLoading(false);
-    })();
-  }, [user]);
+      setBookings(bks.map(b => ({
+        id: b.id,
+        activity_id: b.activity_id,
+        activity_title: titleMap[b.activity_id] || 'Activity',
+        traveller_name: nameMap[b.traveller_id] || 'Traveller',
+        booking_date: b.booking_date,
+        participants: b.participants,
+        total_price: b.total_price,
+        status: b.status,
+      })));
+    } else {
+      setBookings([]);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { loadData(); }, [user]);
+
+  const markCompleted = async (id: string) => {
+    setMarking(id);
+    const { error } = await supabase.from('bookings').update({ status: 'completed' }).eq('id', id);
+    setMarking(null);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Booking marked completed', description: 'Pledge contribution (if any) has been recorded.' });
+    loadData();
+  };
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>;
 
@@ -133,9 +148,9 @@ export default function MyListings() {
         </div>
       )}
 
-      {/* Incoming Bookings */}
+      {/* Bookings */}
       <div className="mt-10">
-        <h2 className="text-xl font-heading font-semibold mb-4">Incoming Bookings</h2>
+        <h2 className="text-xl font-heading font-semibold mb-4">Bookings</h2>
         {bookings.length === 0 ? (
           <Card className="shadow-card">
             <CardContent className="flex flex-col items-center justify-center py-12 text-center">
@@ -145,24 +160,33 @@ export default function MyListings() {
           </Card>
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
-            {bookings.map((b) => (
-              <Card key={b.id} className="shadow-card">
-                <CardContent className="p-4 space-y-2">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="font-medium">{b.activity_title}</p>
-                      <p className="text-sm text-muted-foreground">by {b.traveller_name}</p>
+            {bookings.map((b) => {
+              const isPast = new Date(b.booking_date) < new Date(new Date().toDateString());
+              const canComplete = isPast && b.status !== 'completed' && b.status !== 'cancelled';
+              return (
+                <Card key={b.id} className="shadow-card">
+                  <CardContent className="p-4 space-y-2">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="font-medium">{b.activity_title}</p>
+                        <p className="text-sm text-muted-foreground">by {b.traveller_name}</p>
+                      </div>
+                      <Badge variant={b.status === 'completed' ? 'default' : b.status === 'pending' ? 'secondary' : 'outline'}>{b.status}</Badge>
                     </div>
-                    <Badge variant={b.status === 'pending' ? 'secondary' : 'default'}>{b.status}</Badge>
-                  </div>
-                  <div className="flex gap-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" /> {b.booking_date}</span>
-                    <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {b.participants}</span>
-                    {b.total_price != null && <span className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" /> {b.total_price}</span>}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    <div className="flex gap-4 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" /> {b.booking_date}</span>
+                      <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {b.participants}</span>
+                      {b.total_price != null && <span className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" /> {b.total_price}</span>}
+                    </div>
+                    {canComplete && (
+                      <Button size="sm" variant="outline" className="gap-1 w-full mt-2" disabled={marking === b.id} onClick={() => markCompleted(b.id)}>
+                        <Check className="h-3.5 w-3.5" /> {marking === b.id ? 'Marking…' : 'Mark as completed'}
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>

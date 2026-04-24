@@ -13,6 +13,9 @@ import { useNavigate } from 'react-router-dom';
 import CommunityVerificationPanel from '@/components/CommunityVerificationPanel';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { useVerifiedCommunities } from '@/hooks/useVerifiedCommunities';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import CommunityFundPanel from '@/components/CommunityFundPanel';
+import ImpactReportsPanel from '@/components/ImpactReportsPanel';
 
 interface Community {
   id: string;
@@ -205,76 +208,95 @@ export default function CommunityPage() {
         <h1 className="text-2xl font-heading font-bold mb-2">{myCommunity.name}</h1>
         {myCommunity.description && <p className="text-muted-foreground mb-6">{myCommunity.description}</p>}
 
-        {/* CBT verification section */}
-        <CommunityVerificationPanel communityId={myCommunity.id} />
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="fund">Fund</TabsTrigger>
+            <TabsTrigger value="reports">Impact Reports</TabsTrigger>
+            <TabsTrigger value="verification">Verification</TabsTrigger>
+          </TabsList>
 
-        {/* Aggregate metrics */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6 mt-6">
-          <Card className="shadow-card">
-            <CardContent className="py-4 text-center">
-              <p className="text-2xl font-bold">{members.length}</p>
-              <p className="text-xs text-muted-foreground">Members</p>
-            </CardContent>
-          </Card>
-          <Card className="shadow-card">
-            <CardContent className="py-4 text-center">
-              <p className="text-2xl font-bold">{totalBookings}</p>
-              <p className="text-xs text-muted-foreground">Total Bookings</p>
-            </CardContent>
-          </Card>
-          <Card className="shadow-card">
-            <CardContent className="py-4 text-center">
-              <p className="text-2xl font-bold">{avgRating != null ? avgRating.toFixed(1) : '—'}</p>
-              <p className="text-xs text-muted-foreground">Avg Rating</p>
-            </CardContent>
-          </Card>
-        </div>
+          <TabsContent value="overview" className="space-y-6 mt-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <Card className="shadow-card">
+                <CardContent className="py-4 text-center">
+                  <p className="text-2xl font-bold">{members.length}</p>
+                  <p className="text-xs text-muted-foreground">Members</p>
+                </CardContent>
+              </Card>
+              <Card className="shadow-card">
+                <CardContent className="py-4 text-center">
+                  <p className="text-2xl font-bold">{totalBookings}</p>
+                  <p className="text-xs text-muted-foreground">Total Bookings</p>
+                </CardContent>
+              </Card>
+              <Card className="shadow-card">
+                <CardContent className="py-4 text-center">
+                  <p className="text-2xl font-bold">{avgRating != null ? avgRating.toFixed(1) : '—'}</p>
+                  <p className="text-xs text-muted-foreground">Avg Rating</p>
+                </CardContent>
+              </Card>
+            </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card className="shadow-card">
-            <CardHeader><CardTitle className="text-lg">Members ({members.length})</CardTitle></CardHeader>
-            <CardContent>
-              {members.length === 0 ? (
-                <p className="text-muted-foreground text-sm">No members yet.</p>
-              ) : (
-                <ul className="space-y-2">
-                  {members.map((m) => (
-                    <li key={m.id} className="flex items-center gap-2 text-sm">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span>{m.profiles ? `${m.profiles.first_name} ${m.profiles.last_name}` : 'Unknown'}</span>
-                      {m.provider_id === myCommunity.manager_id && <Badge variant="secondary" className="text-xs">Manager</Badge>}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card className="shadow-card">
+                <CardHeader><CardTitle className="text-lg">Members ({members.length})</CardTitle></CardHeader>
+                <CardContent>
+                  {members.length === 0 ? (
+                    <p className="text-muted-foreground text-sm">No members yet.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {members.map((m) => (
+                        <li key={m.id} className="flex items-center gap-2 text-sm">
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                          <span>{m.profiles ? `${m.profiles.first_name} ${m.profiles.last_name}` : 'Unknown'}</span>
+                          {m.provider_id === myCommunity.manager_id && <Badge variant="secondary" className="text-xs">Manager</Badge>}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
 
-          <Card className="shadow-card">
-            <CardHeader><CardTitle className="text-lg">Pending Requests ({pendingMembers.length})</CardTitle></CardHeader>
-            <CardContent>
-              {pendingMembers.length === 0 ? (
-                <p className="text-muted-foreground text-sm">No pending requests.</p>
-              ) : (
-                <ul className="space-y-3">
-                  {pendingMembers.map((m) => (
-                    <li key={m.id} className="flex items-center justify-between">
-                      <span className="text-sm">{m.profiles ? `${m.profiles.first_name} ${m.profiles.last_name}` : 'Unknown'}</span>
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="outline" className="gap-1 text-primary" onClick={() => handleMemberAction(m.id, 'accepted')}>
-                          <Check className="h-3 w-3" /> Accept
-                        </Button>
-                        <Button size="sm" variant="ghost" className="gap-1 text-destructive" onClick={() => handleMemberAction(m.id, 'rejected')}>
-                          <X className="h-3 w-3" /> Reject
-                        </Button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+              <Card className="shadow-card">
+                <CardHeader><CardTitle className="text-lg">Pending Requests ({pendingMembers.length})</CardTitle></CardHeader>
+                <CardContent>
+                  {pendingMembers.length === 0 ? (
+                    <p className="text-muted-foreground text-sm">No pending requests.</p>
+                  ) : (
+                    <ul className="space-y-3">
+                      {pendingMembers.map((m) => (
+                        <li key={m.id} className="flex items-center justify-between">
+                          <span className="text-sm">{m.profiles ? `${m.profiles.first_name} ${m.profiles.last_name}` : 'Unknown'}</span>
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="outline" className="gap-1 text-primary" onClick={() => handleMemberAction(m.id, 'accepted')}>
+                              <Check className="h-3 w-3" /> Accept
+                            </Button>
+                            <Button size="sm" variant="ghost" className="gap-1 text-destructive" onClick={() => handleMemberAction(m.id, 'rejected')}>
+                              <X className="h-3 w-3" /> Reject
+                            </Button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="fund" className="mt-6">
+            <CommunityFundPanel communityId={myCommunity.id} />
+          </TabsContent>
+
+          <TabsContent value="reports" className="mt-6">
+            <ImpactReportsPanel communityId={myCommunity.id} />
+          </TabsContent>
+
+          <TabsContent value="verification" className="mt-6">
+            <CommunityVerificationPanel communityId={myCommunity.id} />
+          </TabsContent>
+        </Tabs>
       </div>
     );
   }

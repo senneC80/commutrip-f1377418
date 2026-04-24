@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Users, Star, MapPin, DollarSign, Package, BookOpen } from 'lucide-react';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import CommunityFundPublicSection from '@/components/CommunityFundPublicSection';
 
 interface CommunityData {
   id: string;
@@ -229,6 +230,8 @@ export default function PublicCommunity() {
           </>
         )}
       </div>
+      {/* Community Fund + Impact Reports */}
+      <CommunityFundPublicSection communityId={community.id} communityName={community.name} />
     </div>
   );
 }
