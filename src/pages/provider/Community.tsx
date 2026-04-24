@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Users, Plus, Check, X, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface Community {
   id: string;
