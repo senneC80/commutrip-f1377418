@@ -10,6 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Users, Plus, Check, X, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import CommunityVerificationPanel from '@/components/CommunityVerificationPanel';
+import VerifiedBadge from '@/components/VerifiedBadge';
+import { useVerifiedCommunities } from '@/hooks/useVerifiedCommunities';
 
 interface Community {
   id: string;
@@ -202,8 +205,11 @@ export default function CommunityPage() {
         <h1 className="text-2xl font-heading font-bold mb-2">{myCommunity.name}</h1>
         {myCommunity.description && <p className="text-muted-foreground mb-6">{myCommunity.description}</p>}
 
+        {/* CBT verification section */}
+        <CommunityVerificationPanel communityId={myCommunity.id} />
+
         {/* Aggregate metrics */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6 mt-6">
           <Card className="shadow-card">
             <CardContent className="py-4 text-center">
               <p className="text-2xl font-bold">{members.length}</p>
@@ -322,50 +328,15 @@ export default function CommunityPage() {
 
   // Browse view
   if (view === 'browse') {
-    return (
-      <div>
-        <Button variant="ghost" onClick={() => setView('home')} className="mb-4 gap-2 text-muted-foreground">
-          <ArrowLeft className="h-4 w-4" /> Back
-        </Button>
-        <h1 className="text-2xl font-heading font-bold mb-6">Browse Communities</h1>
-        {allCommunities.length === 0 ? (
-          <Card className="shadow-card">
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">No communities yet. Be the first to create one!</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {allCommunities.map((c) => (
-              <Card
-                key={c.id}
-                className="shadow-card hover:shadow-card-hover transition-shadow cursor-pointer group"
-                onClick={() => navigate(`/dashboard/community/${c.id}`)}
-              >
-                <CardHeader><CardTitle className="text-lg group-hover:text-primary transition-colors">{c.name}</CardTitle></CardHeader>
-                <CardContent>
-                  {c.description && <p className="text-sm text-muted-foreground mb-3">{c.description}</p>}
-                  {c.manager_id === user?.id ? (
-                    <Badge>Your Community</Badge>
-                  ) : myMembership?.community_id === c.id ? (
-                    <Badge variant="secondary">{myMembership.status === 'accepted' ? 'Member' : 'Pending'}</Badge>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => { e.stopPropagation(); handleJoin(c.id); }}
-                      disabled={joiningId === c.id}
-                    >
-                      {joiningId === c.id ? 'Sending…' : 'Request to Join'}
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
-    );
+    return <BrowseCommunitiesView
+      allCommunities={allCommunities}
+      currentUserId={user?.id}
+      myMembership={myMembership}
+      joiningId={joiningId}
+      onBack={() => setView('home')}
+      onJoin={handleJoin}
+      onOpen={(id) => navigate(`/dashboard/community/${id}`)}
+    />;
   }
 
   // Home — no community yet
@@ -388,6 +359,69 @@ export default function CommunityPage() {
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+interface BrowseProps {
+  allCommunities: Community[];
+  currentUserId?: string;
+  myMembership: { community_id: string; status: string } | null;
+  joiningId: string | null;
+  onBack: () => void;
+  onJoin: (id: string) => void;
+  onOpen: (id: string) => void;
+}
+
+function BrowseCommunitiesView({ allCommunities, currentUserId, myMembership, joiningId, onBack, onJoin, onOpen }: BrowseProps) {
+  const { verifiedIds } = useVerifiedCommunities();
+  return (
+    <div>
+      <Button variant="ghost" onClick={onBack} className="mb-4 gap-2 text-muted-foreground">
+        <ArrowLeft className="h-4 w-4" /> Back
+      </Button>
+      <h1 className="text-2xl font-heading font-bold mb-6">Browse Communities</h1>
+      {allCommunities.length === 0 ? (
+        <Card className="shadow-card">
+          <CardContent className="py-12 text-center">
+            <p className="text-muted-foreground">No communities yet. Be the first to create one!</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {allCommunities.map((c) => (
+            <Card
+              key={c.id}
+              className="shadow-card hover:shadow-card-hover transition-shadow cursor-pointer group"
+              onClick={() => onOpen(c.id)}
+            >
+              <CardHeader>
+                <CardTitle className="text-lg group-hover:text-primary transition-colors flex items-center gap-2">
+                  {c.name}
+                  {verifiedIds.has(c.id) && <VerifiedBadge size="sm" />}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {c.description && <p className="text-sm text-muted-foreground mb-3">{c.description}</p>}
+                {c.manager_id === currentUserId ? (
+                  <Badge>Your Community</Badge>
+                ) : myMembership?.community_id === c.id ? (
+                  <Badge variant="secondary">{myMembership.status === 'accepted' ? 'Member' : 'Pending'}</Badge>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={(e) => { e.stopPropagation(); onJoin(c.id); }}
+                    disabled={joiningId === c.id}
+                  >
+                    {joiningId === c.id ? 'Sending…' : 'Request to Join'}
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

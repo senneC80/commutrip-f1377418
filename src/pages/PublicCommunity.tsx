@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Users, Star, MapPin, DollarSign, Package, BookOpen } from 'lucide-react';
+import VerifiedBadge from '@/components/VerifiedBadge';
 
 interface CommunityData {
   id: string;
@@ -40,6 +41,7 @@ export default function PublicCommunity() {
   const [activities, setActivities] = useState<PopularActivity[]>([]);
   const [showAllActivities, setShowAllActivities] = useState(false);
   const [metrics, setMetrics] = useState({ totalMembers: 0, totalListings: 0, avgRating: 0, totalBookings: 0 });
+  const [verified, setVerified] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -49,6 +51,10 @@ export default function PublicCommunity() {
       const { data: comm } = await supabase.from('communities').select('*').eq('id', id).single();
       if (!comm) { setLoading(false); return; }
       setCommunity(comm);
+
+      // Verification status
+      const { data: ver } = await supabase.from('community_verifications').select('id').eq('community_id', id).eq('status', 'approved').maybeSingle();
+      setVerified(!!ver);
 
       // Fetch manager name
       const { data: mgrProf } = await supabase.from('profiles').select('first_name, last_name').eq('user_id', comm.manager_id).single();
@@ -123,7 +129,10 @@ export default function PublicCommunity() {
               </div>
             )}
             <div className="flex-1">
-              <h1 className="text-2xl font-heading font-bold">{community.name}</h1>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-2xl font-heading font-bold">{community.name}</h1>
+                {verified && <VerifiedBadge size="md" showLabel />}
+              </div>
               {community.description && <p className="text-muted-foreground mt-1">{community.description}</p>}
               <p className="text-sm text-muted-foreground mt-2">Managed by <span className="text-foreground font-medium">{managerName}</span></p>
             </div>
