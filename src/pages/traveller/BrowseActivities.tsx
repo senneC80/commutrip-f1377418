@@ -114,7 +114,13 @@ export default function Browse() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-heading font-bold">Browse</h1>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <h1 className="text-2xl font-heading font-bold">Browse</h1>
+        <label className="flex items-center gap-2 text-sm">
+          <Switch checked={verifiedOnly} onCheckedChange={setVerifiedOnly} />
+          <span className="flex items-center gap-1">Verified only <VerifiedBadge size="sm" /></span>
+        </label>
+      </div>
 
       <Tabs defaultValue="activities">
         <TabsList>
@@ -154,11 +160,16 @@ export default function Browse() {
             <p className="text-muted-foreground text-center py-12">No activities match your filters.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filtered.map(a => (
+              {filtered.map(a => {
+                const isVerified = !!(a.community_id && verifiedIds.has(a.community_id));
+                return (
                 <Link key={a.id} to={`/dashboard/activity/${a.id}`}>
                   <Card className="shadow-card hover:shadow-card-hover transition-shadow cursor-pointer h-full">
                     <CardContent className="pt-4 space-y-2">
-                      <h3 className="font-heading font-semibold">{a.title}</h3>
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-heading font-semibold">{a.title}</h3>
+                        {isVerified && <VerifiedBadge size="sm" />}
+                      </div>
                       {a.location && (
                         <p className="text-sm text-muted-foreground flex items-center gap-1">
                           <MapPin className="h-3 w-3" /> {a.location}
@@ -191,22 +202,24 @@ export default function Browse() {
                     </CardContent>
                   </Card>
                 </Link>
-              ))}
+                );
+              })}
             </div>
           )}
         </TabsContent>
 
         <TabsContent value="communities" className="mt-4">
-          {communities.length === 0 ? (
-            <p className="text-muted-foreground text-center py-12">No communities yet.</p>
+          {filteredCommunities.length === 0 ? (
+            <p className="text-muted-foreground text-center py-12">No communities match your filters.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {communities.map(c => (
+              {filteredCommunities.map(c => (
                 <Link key={c.id} to={`/dashboard/community/${c.id}`}>
                   <Card className="shadow-card hover:shadow-card-hover transition-shadow cursor-pointer h-full">
                     <CardContent className="pt-4 space-y-2">
                       <h3 className="font-heading font-semibold flex items-center gap-2">
                         <Users className="h-4 w-4 text-primary" /> {c.name}
+                        {verifiedIds.has(c.id) && <VerifiedBadge size="sm" />}
                       </h3>
                       {c.description && <p className="text-sm text-muted-foreground line-clamp-2">{c.description}</p>}
                       <p className="text-xs text-muted-foreground">{c.member_count} member{c.member_count !== 1 ? 's' : ''}</p>
