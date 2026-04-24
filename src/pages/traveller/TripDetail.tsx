@@ -9,6 +9,7 @@ import { ArrowLeft, MapPin, Calendar, DollarSign, ChevronDown, Star, Check } fro
 import GoogleMapsProvider from '@/components/GoogleMapsProvider';
 import TripMap from '@/components/TripMap';
 import ReviewForm from '@/components/ReviewForm';
+import TripImpactSummary from '@/components/TripImpactSummary';
 
 interface TripStop {
   id: string;
@@ -279,6 +280,13 @@ function TripDetailContent() {
       </Button>
       <h1 className="text-2xl font-heading font-bold">{trip.title}</h1>
       {trip.description && <p className="text-muted-foreground">{trip.description}</p>}
+
+      {user && (
+        <TripImpactSummary
+          travellerId={user.id}
+          activityIds={Object.values(bookedByStop).flat().map(b => b.activity_id)}
+        />
+      )}
 
       <div className="flex gap-6 items-start">
         <div className="w-[420px] shrink-0 space-y-4 max-h-[calc(100vh-180px)] overflow-y-auto pr-2">
