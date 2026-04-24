@@ -148,9 +148,9 @@ export default function MyListings() {
         </div>
       )}
 
-      {/* Incoming Bookings */}
+      {/* Bookings */}
       <div className="mt-10">
-        <h2 className="text-xl font-heading font-semibold mb-4">Incoming Bookings</h2>
+        <h2 className="text-xl font-heading font-semibold mb-4">Bookings</h2>
         {bookings.length === 0 ? (
           <Card className="shadow-card">
             <CardContent className="flex flex-col items-center justify-center py-12 text-center">
@@ -160,24 +160,33 @@ export default function MyListings() {
           </Card>
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
-            {bookings.map((b) => (
-              <Card key={b.id} className="shadow-card">
-                <CardContent className="p-4 space-y-2">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="font-medium">{b.activity_title}</p>
-                      <p className="text-sm text-muted-foreground">by {b.traveller_name}</p>
+            {bookings.map((b) => {
+              const isPast = new Date(b.booking_date) < new Date(new Date().toDateString());
+              const canComplete = isPast && b.status !== 'completed' && b.status !== 'cancelled';
+              return (
+                <Card key={b.id} className="shadow-card">
+                  <CardContent className="p-4 space-y-2">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="font-medium">{b.activity_title}</p>
+                        <p className="text-sm text-muted-foreground">by {b.traveller_name}</p>
+                      </div>
+                      <Badge variant={b.status === 'completed' ? 'default' : b.status === 'pending' ? 'secondary' : 'outline'}>{b.status}</Badge>
                     </div>
-                    <Badge variant={b.status === 'pending' ? 'secondary' : 'default'}>{b.status}</Badge>
-                  </div>
-                  <div className="flex gap-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" /> {b.booking_date}</span>
-                    <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {b.participants}</span>
-                    {b.total_price != null && <span className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" /> {b.total_price}</span>}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    <div className="flex gap-4 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" /> {b.booking_date}</span>
+                      <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {b.participants}</span>
+                      {b.total_price != null && <span className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" /> {b.total_price}</span>}
+                    </div>
+                    {canComplete && (
+                      <Button size="sm" variant="outline" className="gap-1 w-full mt-2" disabled={marking === b.id} onClick={() => markCompleted(b.id)}>
+                        <Check className="h-3.5 w-3.5" /> {marking === b.id ? 'Marking…' : 'Mark as completed'}
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
