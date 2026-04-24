@@ -8,9 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Check } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { CalendarIcon, Check, Heart, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { computeBreakdown, formatMoney } from '@/lib/pricing';
+import { useProviderCommunityFund } from '@/hooks/useCommunityFund';
 
 interface Activity {
   id: string;
@@ -35,6 +38,8 @@ const dayToIndex = (day: string): number => {
   return DAY_NAMES_ABBR.indexOf(day);
 };
 
+const TOPUP_PRESETS = [2, 5, 10];
+
 export default function BookingModal({ activity, open, onOpenChange, onBooked }: {
   activity: Activity;
   open: boolean;
@@ -43,17 +48,25 @@ export default function BookingModal({ activity, open, onOpenChange, onBooked }:
 }) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { fund, communityName } = useProviderCommunityFund(activity.provider_id);
   const [date, setDate] = useState<Date | undefined>(
     activity.recurrence_type === 'one-time' && activity.event_date ? parseISO(activity.event_date) : undefined
   );
   const [participants, setParticipants] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [topUpPreset, setTopUpPreset] = useState<number | 'custom' | null>(null);
+  const [topUpCustom, setTopUpCustom] = useState('');
 
   const pricePerPerson = activity.price ?? 0;
-  const subtotal = pricePerPerson * participants;
-  const commission = Math.round(subtotal * 0.05 * 100) / 100;
-  const grandTotal = subtotal + commission;
+  const topUpAmount = topUpPreset === 'custom'
+    ? Math.max(0, parseFloat(topUpCustom) || 0)
+    : (typeof topUpPreset === 'number' ? topUpPreset : 0);
+
+  const breakdown = useMemo(
+    () => computeBreakdown({ pricePerPerson, participants, topUp: topUpAmount }),
+    [pricePerPerson, participants, topUpAmount]
+  );
 
   const isDateAllowed = useMemo(() => {
     if (activity.recurrence_type === 'one-time') {
@@ -62,7 +75,6 @@ export default function BookingModal({ activity, open, onOpenChange, onBooked }:
         return format(d, 'yyyy-MM-dd') === activity.event_date;
       };
     }
-    // recurring
     const allowedDays = (activity.schedule_days || []).map(day => dayToIndex(day)).filter(i => i >= 0);
     const from = activity.available_from ? parseISO(activity.available_from) : null;
     const until = activity.available_until ? parseISO(activity.available_until) : null;
@@ -77,21 +89,38 @@ export default function BookingModal({ activity, open, onOpenChange, onBooked }:
   const handleConfirm = async () => {
     if (!user || !date) return;
     setSubmitting(true);
-    const { error } = await supabase.from('bookings').insert({
+    const { data: bookingData, error } = await supabase.from('bookings').insert({
       activity_id: activity.id,
       traveller_id: user.id,
       provider_id: activity.provider_id,
       booking_date: format(date, 'yyyy-MM-dd'),
       participants,
-      total_price: subtotal,
-      commission_amount: commission,
+      total_price: breakdown.subtotal,
+      commission_amount: breakdown.commission,
+      voluntary_contribution_amount: breakdown.topUp,
       status: 'pending',
-    });
-    setSubmitting(false);
+    }).select('id').single();
     if (error) {
+      setSubmitting(false);
       toast({ title: 'Booking failed', description: error.message, variant: 'destructive' });
       return;
     }
+    // If a top-up was added and a fund exists, record the contribution
+    if (breakdown.topUp > 0 && fund && bookingData) {
+      const { error: contribErr } = await supabase.from('fund_contributions').insert({
+        fund_id: fund.id,
+        source_type: 'traveller_topup',
+        contributor_id: user.id,
+        booking_id: bookingData.id,
+        amount: breakdown.topUp,
+        currency: fund.currency,
+      });
+      if (contribErr) {
+        // Booking already created; warn but don't block
+        toast({ title: 'Top-up not recorded', description: contribErr.message, variant: 'destructive' });
+      }
+    }
+    setSubmitting(false);
     setConfirmed(true);
     onBooked?.();
   };
@@ -104,6 +133,9 @@ export default function BookingModal({ activity, open, onOpenChange, onBooked }:
             <div className="bg-primary/10 rounded-full p-3"><Check className="h-8 w-8 text-primary" /></div>
             <h2 className="text-xl font-heading font-bold">Booking Confirmed!</h2>
             <p className="text-muted-foreground text-sm">Your booking for <span className="font-medium text-foreground">{activity.title}</span> on {format(date!, 'PPP')} has been submitted.</p>
+            {breakdown.topUp > 0 && fund && (
+              <p className="text-sm text-primary">Thank you for your {formatMoney(breakdown.topUp, fund.currency)} contribution to {communityName}'s fund. ❤️</p>
+            )}
             <Button onClick={() => onOpenChange(false)} className="mt-2">Close</Button>
           </div>
         </DialogContent>
@@ -111,18 +143,15 @@ export default function BookingModal({ activity, open, onOpenChange, onBooked }:
     );
   }
 
+  const currency = activity.currency;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-heading">Book: {activity.title}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Price per person</span>
-            <span className="font-medium">{activity.currency} {pricePerPerson}</span>
-          </div>
-
           {/* Date picker */}
           <div className="space-y-1.5">
             <Label>Date</Label>
@@ -158,19 +187,82 @@ export default function BookingModal({ activity, open, onOpenChange, onBooked }:
             {activity.max_participants && <p className="text-xs text-muted-foreground">Max capacity: {activity.max_participants}</p>}
           </div>
 
+          {/* Optional community fund top-up */}
+          {fund && (
+            <div className="border border-primary/30 bg-primary/5 rounded-lg p-3 space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Heart className="h-4 w-4 text-primary" />
+                Support {communityName}'s fund
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-xs">{fund.purpose}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <p className="text-xs text-muted-foreground">{fund.description}</p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {TOPUP_PRESETS.map(amt => (
+                  <Button
+                    key={amt}
+                    type="button"
+                    size="sm"
+                    variant={topUpPreset === amt ? 'default' : 'outline'}
+                    onClick={() => setTopUpPreset(topUpPreset === amt ? null : amt)}
+                  >
+                    {formatMoney(amt, fund.currency)}
+                  </Button>
+                ))}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={topUpPreset === 'custom' ? 'default' : 'outline'}
+                  onClick={() => setTopUpPreset(topUpPreset === 'custom' ? null : 'custom')}
+                >
+                  Custom
+                </Button>
+              </div>
+              {topUpPreset === 'custom' && (
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.5"
+                  placeholder="Amount"
+                  value={topUpCustom}
+                  onChange={(e) => setTopUpCustom(e.target.value)}
+                />
+              )}
+            </div>
+          )}
+
           {/* Price breakdown */}
-          <div className="border-t pt-3 space-y-2 text-sm">
+          <div className="border-t pt-3 space-y-1.5 text-sm">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-1">Where your money goes</p>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">{participants} × {activity.currency} {pricePerPerson}</span>
-              <span>{activity.currency} {subtotal.toFixed(2)}</span>
+              <span className="text-muted-foreground">To provider ({participants} × {formatMoney(pricePerPerson, currency)})</span>
+              <span>{formatMoney(breakdown.providerNet, currency)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Service fee (5%)</span>
-              <span>{activity.currency} {commission.toFixed(2)}</span>
+              <span className="text-muted-foreground">Platform commission (5%)</span>
+              <span>{formatMoney(breakdown.commission, currency)}</span>
             </div>
-            <div className="flex justify-between font-semibold border-t pt-2">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Payment processing (~2.9% + €0.30)</span>
+              <span>{formatMoney(breakdown.paymentFee, currency)}</span>
+            </div>
+            {breakdown.topUp > 0 && (
+              <div className="flex justify-between text-primary">
+                <span>Contribution to {communityName} fund</span>
+                <span>{formatMoney(breakdown.topUp, currency)}</span>
+              </div>
+            )}
+            <div className="flex justify-between font-semibold border-t pt-2 mt-1">
               <span>Total</span>
-              <span>{activity.currency} {grandTotal.toFixed(2)}</span>
+              <span>{formatMoney(breakdown.total, currency)}</span>
             </div>
           </div>
 
