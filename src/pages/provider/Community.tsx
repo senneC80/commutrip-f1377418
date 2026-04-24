@@ -337,8 +337,12 @@ export default function CommunityPage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {allCommunities.map((c) => (
-              <Card key={c.id} className="shadow-card">
-                <CardHeader><CardTitle className="text-lg">{c.name}</CardTitle></CardHeader>
+              <Card
+                key={c.id}
+                className="shadow-card hover:shadow-card-hover transition-shadow cursor-pointer group"
+                onClick={() => navigate(`/dashboard/community/${c.id}`)}
+              >
+                <CardHeader><CardTitle className="text-lg group-hover:text-primary transition-colors">{c.name}</CardTitle></CardHeader>
                 <CardContent>
                   {c.description && <p className="text-sm text-muted-foreground mb-3">{c.description}</p>}
                   {c.manager_id === user?.id ? (
@@ -346,7 +350,12 @@ export default function CommunityPage() {
                   ) : myMembership?.community_id === c.id ? (
                     <Badge variant="secondary">{myMembership.status === 'accepted' ? 'Member' : 'Pending'}</Badge>
                   ) : (
-                    <Button size="sm" variant="outline" onClick={() => handleJoin(c.id)} disabled={joiningId === c.id}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => { e.stopPropagation(); handleJoin(c.id); }}
+                      disabled={joiningId === c.id}
+                    >
                       {joiningId === c.id ? 'Sending…' : 'Request to Join'}
                     </Button>
                   )}
