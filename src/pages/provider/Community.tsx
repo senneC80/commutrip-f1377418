@@ -30,6 +30,7 @@ type View = 'home' | 'create' | 'browse' | 'manage';
 export default function CommunityPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [view, setView] = useState<View>('home');
   const [loading, setLoading] = useState(true);
 
