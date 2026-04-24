@@ -338,9 +338,6 @@ export default function CommunityPage() {
       onOpen={(id) => navigate(`/dashboard/community/${id}`)}
     />;
   }
-      </div>
-    );
-  }
 
   // Home — no community yet
   return (
