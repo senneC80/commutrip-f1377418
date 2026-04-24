@@ -202,8 +202,11 @@ export default function CommunityPage() {
         <h1 className="text-2xl font-heading font-bold mb-2">{myCommunity.name}</h1>
         {myCommunity.description && <p className="text-muted-foreground mb-6">{myCommunity.description}</p>}
 
+        {/* CBT verification section */}
+        <CommunityVerificationPanel communityId={myCommunity.id} />
+
         {/* Aggregate metrics */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6 mt-6">
           <Card className="shadow-card">
             <CardContent className="py-4 text-center">
               <p className="text-2xl font-bold">{members.length}</p>
