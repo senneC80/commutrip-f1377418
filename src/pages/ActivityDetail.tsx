@@ -13,6 +13,7 @@ import ReviewsList from '@/components/ReviewsList';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import VerifiedBadge from '@/components/VerifiedBadge';
 
 interface ActivityData {
   id: string;
@@ -44,6 +45,7 @@ function ActivityDetailContent() {
   const [providerName, setProviderName] = useState('');
   const [communityName, setCommunityName] = useState<string | null>(null);
   const [communityId, setCommunityId] = useState<string | null>(null);
+  const [communityVerified, setCommunityVerified] = useState(false);
   const [loading, setLoading] = useState(true);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [msgOpen, setMsgOpen] = useState(false);
@@ -64,8 +66,12 @@ function ActivityDetailContent() {
       const { data: membership } = await supabase.from('community_members').select('community_id').eq('provider_id', data.provider_id).eq('status', 'accepted').limit(1).maybeSingle();
       if (membership) {
         setCommunityId(membership.community_id);
-        const { data: comm } = await supabase.from('communities').select('name').eq('id', membership.community_id).single();
+        const [{ data: comm }, { data: ver }] = await Promise.all([
+          supabase.from('communities').select('name').eq('id', membership.community_id).single(),
+          supabase.from('community_verifications').select('id').eq('community_id', membership.community_id).eq('status', 'approved').maybeSingle(),
+        ]);
         if (comm) setCommunityName(comm.name);
+        setCommunityVerified(!!ver);
       }
       setLoading(false);
     })();
@@ -85,12 +91,13 @@ function ActivityDetailContent() {
       <Card className="shadow-card">
         <CardHeader>
           <CardTitle className="text-2xl font-heading">{activity.title}</CardTitle>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
             <span>by <Link to={`/dashboard/provider-profile/${activity.provider_id}`} className="text-primary hover:underline">{providerName}</Link></span>
             {communityName && (
               <>
                 <span>·</span>
                 <Link to={`/dashboard/community/${communityId}`} className="text-primary hover:underline">{communityName}</Link>
+                {communityVerified && <VerifiedBadge size="sm" />}
               </>
             )}
           </div>
