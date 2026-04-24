@@ -45,7 +45,7 @@ export default function ImpactReportsPanel({ communityId }: { communityId: strin
       .select('*')
       .eq('community_id', communityId)
       .order('created_at', { ascending: false });
-    if (data) setReports(data.map(r => ({ ...r, metrics: Array.isArray(r.metrics) ? r.metrics : [] })) as Report[]);
+    if (data) setReports(data.map(r => ({ ...r, metrics: Array.isArray(r.metrics) ? (r.metrics as unknown as Metric[]) : [] })) as Report[]);
     setLoading(false);
   };
 
