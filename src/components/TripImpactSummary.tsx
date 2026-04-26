@@ -18,10 +18,25 @@ export default function TripImpactSummary({ travellerId, activityIds }: { travel
     (async () => {
       const { data: bks } = await supabase
         .from('bookings')
-        .select('id, total_price, commission_amount, voluntary_contribution_amount, participants, activity_id, provider_id')
+        .select('id, total_price, commission_amount, participants, activity_id, provider_id')
         .eq('traveller_id', travellerId)
         .in('activity_id', activityIds);
       if (!bks || bks.length === 0) { setData(null); return; }
+
+      const bookingIds = bks.map(b => b.id);
+
+      // Fetch traveller top-ups for these bookings
+      const { data: contribs } = await supabase
+        .from('fund_contributions')
+        .select('amount, fund_id, booking_id')
+        .eq('contributor_id', travellerId)
+        .eq('source_type', 'traveller_topup')
+        .in('booking_id', bookingIds);
+
+      const topUpByBooking: Record<string, number> = {};
+      (contribs || []).forEach(c => {
+        if (c.booking_id) topUpByBooking[c.booking_id] = (topUpByBooking[c.booking_id] || 0) + Number(c.amount);
+      });
 
       let toProviders = 0, commission = 0, paymentFees = 0, totalSpent = 0;
       for (const b of bks) {
@@ -29,22 +44,13 @@ export default function TripImpactSummary({ travellerId, activityIds }: { travel
         const breakdown = computeBreakdown({
           pricePerPerson: subtotal / Math.max(1, b.participants || 1),
           participants: b.participants || 1,
-          topUp: Number(b.voluntary_contribution_amount || 0),
+          topUp: topUpByBooking[b.id] || 0,
         });
         toProviders += breakdown.providerNet;
         commission += breakdown.commission;
         paymentFees += breakdown.paymentFee;
         totalSpent += breakdown.total;
       }
-
-      // Top-up contributions grouped by community
-      const bookingIds = bks.map(b => b.id);
-      const { data: contribs } = await supabase
-        .from('fund_contributions')
-        .select('amount, fund_id')
-        .eq('contributor_id', travellerId)
-        .eq('source_type', 'traveller_topup')
-        .in('booking_id', bookingIds);
 
       const byCommunity: { communityName: string; amount: number }[] = [];
       if (contribs && contribs.length > 0) {
