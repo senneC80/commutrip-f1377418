@@ -89,36 +89,21 @@ export default function BookingModal({ activity, open, onOpenChange, onBooked }:
   const handleConfirm = async () => {
     if (!user || !date) return;
     setSubmitting(true);
-    const { data: bookingData, error } = await supabase.from('bookings').insert({
-      activity_id: activity.id,
-      traveller_id: user.id,
-      provider_id: activity.provider_id,
-      booking_date: format(date, 'yyyy-MM-dd'),
-      participants,
-      total_price: breakdown.subtotal,
-      commission_amount: breakdown.commission,
-      voluntary_contribution_amount: breakdown.topUp,
-      status: 'pending',
-    }).select('id').single();
+    const { error } = await supabase.rpc('create_booking_with_topup', {
+      _activity_id: activity.id,
+      _provider_id: activity.provider_id,
+      _booking_date: format(date, 'yyyy-MM-dd'),
+      _participants: participants,
+      _total_price: breakdown.subtotal,
+      _commission_amount: breakdown.commission,
+      _topup_amount: breakdown.topUp,
+      _fund_id: breakdown.topUp > 0 && fund ? fund.id : null,
+      _topup_currency: fund?.currency || 'EUR',
+    });
     if (error) {
       setSubmitting(false);
       toast({ title: 'Booking failed', description: error.message, variant: 'destructive' });
       return;
-    }
-    // If a top-up was added and a fund exists, record the contribution
-    if (breakdown.topUp > 0 && fund && bookingData) {
-      const { error: contribErr } = await supabase.from('fund_contributions').insert({
-        fund_id: fund.id,
-        source_type: 'traveller_topup',
-        contributor_id: user.id,
-        booking_id: bookingData.id,
-        amount: breakdown.topUp,
-        currency: fund.currency,
-      });
-      if (contribErr) {
-        // Booking already created; warn but don't block
-        toast({ title: 'Top-up not recorded', description: contribErr.message, variant: 'destructive' });
-      }
     }
     setSubmitting(false);
     setConfirmed(true);
