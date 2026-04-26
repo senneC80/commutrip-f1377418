@@ -10,7 +10,7 @@ import { formatMoney } from '@/lib/pricing';
 
 interface Pledge {
   id: string;
-  community_id: string;
+  fund_id: string;
   pledge_percentage: number;
   is_active: boolean;
 }
@@ -27,6 +27,7 @@ export default function ProviderPledgeSection() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [hasCommunityWithoutFund, setHasCommunityWithoutFund] = useState(false);
   const [community, setCommunity] = useState<CommunityWithFund | null>(null);
   const [pledge, setPledge] = useState<Pledge | null>(null);
   const [percentage, setPercentage] = useState<number>(5);
@@ -37,7 +38,7 @@ export default function ProviderPledgeSection() {
   const load = async () => {
     if (!user) return;
     setLoading(true);
-    // Find my accepted community
+    setHasCommunityWithoutFund(false);
     const { data: mem } = await supabase
       .from('community_members')
       .select('community_id')
@@ -50,7 +51,12 @@ export default function ProviderPledgeSection() {
       supabase.from('communities').select('id, name').eq('id', mem.community_id).maybeSingle(),
       supabase.from('community_funds').select('id, currency, purpose').eq('community_id', mem.community_id).maybeSingle(),
     ]);
-    if (!fund || !comm) { setLoading(false); return; }
+    if (!comm) { setLoading(false); return; }
+    if (!fund) {
+      setHasCommunityWithoutFund(true);
+      setLoading(false);
+      return;
+    }
 
     setCommunity({
       community_id: comm.id,
@@ -64,14 +70,13 @@ export default function ProviderPledgeSection() {
       .from('provider_pledges')
       .select('*')
       .eq('provider_id', user.id)
-      .eq('community_id', mem.community_id)
+      .eq('fund_id', fund.id)
       .maybeSingle();
     if (p) {
       setPledge(p as Pledge);
       setPercentage(Number(p.pledge_percentage));
     }
 
-    // Total contributed by me to this fund
     const { data: contribs } = await supabase
       .from('fund_contributions')
       .select('amount')
@@ -90,7 +95,7 @@ export default function ProviderPledgeSection() {
     setSaving(true);
     const payload = {
       provider_id: user.id,
-      community_id: community.community_id,
+      fund_id: community.fund_id,
       pledge_percentage: percentage,
       is_active: true,
     };
@@ -117,7 +122,25 @@ export default function ProviderPledgeSection() {
   };
 
   if (loading) return null;
-  if (!community) return null; // No fund available — hide entirely
+
+  if (hasCommunityWithoutFund) {
+    return (
+      <Card className="shadow-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Heart className="h-5 w-5 text-primary" /> Community Fund Pledge
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Pledges become available once your community sets up a fund. Check back later or ask your community manager.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!community) return null;
 
   return (
     <Card className="shadow-card">

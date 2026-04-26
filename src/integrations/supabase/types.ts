@@ -617,6 +617,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_booking_with_topup: {
+        Args: {
+          _activity_id: string
+          _booking_date: string
+          _commission_amount: number
+          _fund_id?: string
+          _participants: number
+          _provider_id: string
+          _topup_amount?: number
+          _topup_currency?: string
+          _total_price: number
+        }
+        Returns: string
+      }
       earth: { Args: never; Returns: number }
       get_fund_balance: { Args: { _fund_id: string }; Returns: number }
       get_recommended_activities: {
