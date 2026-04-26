@@ -102,7 +102,6 @@ export type Database = {
           status: string
           total_price: number | null
           traveller_id: string
-          voluntary_contribution_amount: number
         }
         Insert: {
           activity_id: string
@@ -116,7 +115,6 @@ export type Database = {
           status?: string
           total_price?: number | null
           traveller_id: string
-          voluntary_contribution_amount?: number
         }
         Update: {
           activity_id?: string
@@ -130,7 +128,6 @@ export type Database = {
           status?: string
           total_price?: number | null
           traveller_id?: string
-          voluntary_contribution_amount?: number
         }
         Relationships: [
           {
@@ -433,8 +430,8 @@ export type Database = {
       }
       provider_pledges: {
         Row: {
-          community_id: string
           created_at: string
+          fund_id: string
           id: string
           is_active: boolean
           pledge_percentage: number
@@ -442,8 +439,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          community_id: string
           created_at?: string
+          fund_id: string
           id?: string
           is_active?: boolean
           pledge_percentage: number
@@ -451,15 +448,23 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          community_id?: string
           created_at?: string
+          fund_id?: string
           id?: string
           is_active?: boolean
           pledge_percentage?: number
           provider_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "provider_pledges_fund_id_fkey"
+            columns: ["fund_id"]
+            isOneToOne: false
+            referencedRelation: "community_funds"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reviews: {
         Row: {
