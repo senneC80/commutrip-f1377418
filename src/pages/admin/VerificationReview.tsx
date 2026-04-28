@@ -52,8 +52,8 @@ export default function VerificationReview() {
       if (mgrProf) setManager(`${mgrProf.first_name} ${mgrProf.last_name}`.trim());
 
       if (comm) {
-        const { data: mems } = await supabase.from('community_members').select('provider_id').eq('community_id', comm.id).eq('status', 'accepted');
-        const providerIds = mems?.map(m => m.provider_id) || [];
+        const { data: mems } = await supabase.rpc('get_accepted_community_members', { _community_id: comm.id });
+        const providerIds = (mems || []).map((m: any) => m.provider_id);
         if (providerIds.length > 0) {
           const [{ data: profs }, { data: acts }] = await Promise.all([
             supabase.from('profiles').select('user_id, first_name, last_name').in('user_id', providerIds),
