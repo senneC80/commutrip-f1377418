@@ -55,20 +55,20 @@ export default function Browse() {
         const providerIds = [...new Set(data.map(a => a.provider_id))];
         const [{ data: profiles }, { data: memberships }] = await Promise.all([
           supabase.from('profiles').select('user_id, first_name, last_name').in('user_id', providerIds),
-          supabase.from('community_members').select('provider_id, community_id').eq('status', 'accepted').in('provider_id', providerIds),
+          supabase.rpc('get_providers_accepted_communities', { _provider_ids: providerIds }),
         ]);
         const nameMap: Record<string, string> = {};
         profiles?.forEach(p => { nameMap[p.user_id] = `${p.first_name} ${p.last_name}`.trim(); });
 
         // Fetch community names for providers who are members
-        const communityIds = [...new Set(memberships?.map(m => m.community_id) || [])];
+        const communityIds = [...new Set((memberships || []).map((m: any) => m.community_id))];
         let commNameMap: Record<string, { id: string; name: string }> = {};
         if (communityIds.length > 0) {
           const { data: comms } = await supabase.from('communities').select('id, name').in('id', communityIds);
           comms?.forEach(c => { commNameMap[c.id] = { id: c.id, name: c.name }; });
         }
         const providerCommMap: Record<string, { id: string; name: string }> = {};
-        memberships?.forEach(m => {
+        (memberships || []).forEach((m: any) => {
           if (commNameMap[m.community_id]) providerCommMap[m.provider_id] = commNameMap[m.community_id];
         });
 
@@ -83,9 +83,9 @@ export default function Browse() {
       // Fetch communities
       const { data: allComms } = await supabase.from('communities').select('id, name, description');
       if (allComms) {
-        const { data: allMems } = await supabase.from('community_members').select('community_id').eq('status', 'accepted');
+        const { data: counts } = await supabase.rpc('get_community_member_counts');
         const countMap: Record<string, number> = {};
-        allMems?.forEach(m => { countMap[m.community_id] = (countMap[m.community_id] || 0) + 1; });
+        (counts || []).forEach((c: any) => { countMap[c.community_id] = Number(c.member_count) || 0; });
         setCommunities(allComms.map(c => ({ ...c, member_count: countMap[c.id] || 0 })));
       }
 
