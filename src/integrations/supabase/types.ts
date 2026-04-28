@@ -639,6 +639,13 @@ export type Database = {
           provider_id: string
         }[]
       }
+      get_community_member_counts: {
+        Args: never
+        Returns: {
+          community_id: string
+          member_count: number
+        }[]
+      }
       get_community_verification_status: {
         Args: { _community_id: string }
         Returns: string
@@ -687,6 +694,12 @@ export type Database = {
           start_hour: string
           tag_match_count: number
           title: string
+        }[]
+      }
+      get_verified_community_ids: {
+        Args: never
+        Returns: {
+          community_id: string
         }[]
       }
       has_role: {

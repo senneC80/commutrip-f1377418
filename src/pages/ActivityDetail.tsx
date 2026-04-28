@@ -63,15 +63,15 @@ function ActivityDetailContent() {
       const { data: profile } = await supabase.from('profiles').select('first_name, last_name').eq('user_id', data.provider_id).single();
       if (profile) setProviderName(`${profile.first_name} ${profile.last_name}`.trim());
 
-      const { data: membership } = await supabase.from('community_members').select('community_id').eq('provider_id', data.provider_id).eq('status', 'accepted').limit(1).maybeSingle();
-      if (membership) {
-        setCommunityId(membership.community_id);
-        const [{ data: comm }, { data: ver }] = await Promise.all([
-          supabase.from('communities').select('name').eq('id', membership.community_id).single(),
-          supabase.from('community_verifications').select('id').eq('community_id', membership.community_id).eq('status', 'approved').maybeSingle(),
+      const { data: membershipCommId } = await supabase.rpc('get_provider_accepted_community', { _provider_id: data.provider_id });
+      if (membershipCommId) {
+        setCommunityId(membershipCommId);
+        const [{ data: comm }, { data: verStatus }] = await Promise.all([
+          supabase.from('communities').select('name').eq('id', membershipCommId).single(),
+          supabase.rpc('get_community_verification_status', { _community_id: membershipCommId }),
         ]);
         if (comm) setCommunityName(comm.name);
-        setCommunityVerified(!!ver);
+        setCommunityVerified(verStatus === 'approved');
       }
       setLoading(false);
     })();

@@ -10,10 +10,7 @@ export function useVerifiedCommunities() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from('community_verifications')
-        .select('community_id')
-        .eq('status', 'approved');
+      const { data } = await supabase.rpc('get_verified_community_ids');
       setVerifiedIds(new Set((data || []).map((r: any) => r.community_id)));
       setLoading(false);
     })();

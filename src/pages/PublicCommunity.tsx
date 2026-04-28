@@ -53,17 +53,17 @@ export default function PublicCommunity() {
       if (!comm) { setLoading(false); return; }
       setCommunity(comm);
 
-      // Verification status
-      const { data: ver } = await supabase.from('community_verifications').select('id').eq('community_id', id).eq('status', 'approved').maybeSingle();
-      setVerified(!!ver);
+      // Verification status (via SECURITY DEFINER fn — does not leak submission details)
+      const { data: verStatus } = await supabase.rpc('get_community_verification_status', { _community_id: id });
+      setVerified(verStatus === 'approved');
 
       // Fetch manager name
       const { data: mgrProf } = await supabase.from('profiles').select('first_name, last_name').eq('user_id', comm.manager_id).single();
       if (mgrProf) setManagerName(`${mgrProf.first_name} ${mgrProf.last_name}`.trim());
 
-      // Fetch accepted members
-      const { data: mems } = await supabase.from('community_members').select('provider_id').eq('community_id', id).eq('status', 'accepted');
-      const providerIds = mems?.map(m => m.provider_id) || [];
+      // Fetch accepted members via SECURITY DEFINER fn (only exposes accepted memberships)
+      const { data: mems } = await supabase.rpc('get_accepted_community_members', { _community_id: id });
+      const providerIds = (mems || []).map((m: any) => m.provider_id);
 
       if (providerIds.length > 0) {
         // Fetch member profiles
