@@ -47,15 +47,15 @@ export default function ProviderProfile() {
   useEffect(() => {
     if (!id) return;
     (async () => {
-      const [{ data: prof }, { data: acts }, { data: mem }] = await Promise.all([
+      const [{ data: prof }, { data: acts }, { data: memCommId }] = await Promise.all([
         supabase.from('profiles').select('first_name, last_name, bio, avatar_url, interest_tags').eq('user_id', id).single(),
         supabase.from('activities').select('id, title, location, price, currency, interest_tags').eq('provider_id', id).eq('is_active', true),
-        supabase.from('community_members').select('community_id').eq('provider_id', id).eq('status', 'accepted').limit(1).maybeSingle(),
+        supabase.rpc('get_provider_accepted_community', { _provider_id: id }),
       ]);
       if (prof) setProfile(prof);
       if (acts) setActivities(acts);
-      if (mem) {
-        const { data: comm } = await supabase.from('communities').select('id, name').eq('id', mem.community_id).single();
+      if (memCommId) {
+        const { data: comm } = await supabase.from('communities').select('id, name').eq('id', memCommId).single();
         if (comm) setCommunity(comm);
       }
       setLoading(false);

@@ -247,7 +247,7 @@ function TripDetailContent() {
         if (data && data.length > 0) {
           const providerIds = [...new Set(data.map((a: any) => a.provider_id))];
           const { data: profiles } = await supabase.from('profiles').select('user_id, first_name, last_name').in('user_id', providerIds);
-          const { data: members } = await supabase.from('community_members').select('provider_id, community_id, status').in('provider_id', providerIds).eq('status', 'accepted');
+          const { data: members } = await supabase.rpc('get_providers_accepted_communities', { _provider_ids: providerIds });
           let communityMap: Record<string, string> = {};
           if (members && members.length > 0) {
             const communityIds = [...new Set(members.map((m: any) => m.community_id))];
