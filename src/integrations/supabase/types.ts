@@ -644,6 +644,17 @@ export type Database = {
         Returns: string
       }
       get_fund_balance: { Args: { _fund_id: string }; Returns: number }
+      get_provider_accepted_community: {
+        Args: { _provider_id: string }
+        Returns: string
+      }
+      get_providers_accepted_communities: {
+        Args: { _provider_ids: string[] }
+        Returns: {
+          community_id: string
+          provider_id: string
+        }[]
+      }
       get_recommended_activities: {
         Args: {
           _arrival_date: string
