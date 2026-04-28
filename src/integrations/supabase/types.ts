@@ -632,6 +632,17 @@ export type Database = {
         Returns: string
       }
       earth: { Args: never; Returns: number }
+      get_accepted_community_members: {
+        Args: { _community_id: string }
+        Returns: {
+          joined_at: string
+          provider_id: string
+        }[]
+      }
+      get_community_verification_status: {
+        Args: { _community_id: string }
+        Returns: string
+      }
       get_fund_balance: { Args: { _fund_id: string }; Returns: number }
       get_recommended_activities: {
         Args: {
