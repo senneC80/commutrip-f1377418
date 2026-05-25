@@ -105,8 +105,7 @@ function BookedActivityCard({ booking, activityTitle, onReviewSubmitted }: {
 }) {
   const { user } = useAuth();
   const [reviewOpen, setReviewOpen] = useState(false);
-  const isPast = new Date(booking.booking_date) < new Date();
-  const canReview = isPast && !booking.has_review;
+  const canReview = booking.status === 'completed' && !booking.has_review;
 
   return (
     <>
