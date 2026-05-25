@@ -88,7 +88,7 @@ export default function MyListings() {
 
   const markCompleted = async (id: string) => {
     setMarking(id);
-    const { error } = await supabase.from('bookings').update({ status: 'completed' }).eq('id', id);
+    const { error } = await supabase.rpc('mark_booking_completed', { _booking_id: id });
     setMarking(null);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });

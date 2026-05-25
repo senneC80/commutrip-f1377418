@@ -713,6 +713,10 @@ export type Database = {
         Args: { _community_id: string }
         Returns: boolean
       }
+      mark_booking_completed: {
+        Args: { _booking_id: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "traveller" | "provider" | "admin"
