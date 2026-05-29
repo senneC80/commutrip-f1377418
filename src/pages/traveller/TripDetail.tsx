@@ -51,7 +51,7 @@ interface BookedActivity {
 
 const INITIAL_SHOW = 3;
 
-function StopRecommendations({ activities }: { activities: Activity[] }) {
+function StopRecommendations({ activities, stopId }: { activities: Activity[]; stopId: string }) {
   const [expanded, setExpanded] = useState(false);
   const visible = expanded ? activities : activities.slice(0, INITIAL_SHOW);
   const hasMore = activities.length > INITIAL_SHOW;
@@ -60,7 +60,7 @@ function StopRecommendations({ activities }: { activities: Activity[] }) {
     <div className="space-y-2">
       <p className="text-sm font-medium text-muted-foreground">Recommended Activities</p>
       {visible.map((act) => (
-        <Link key={act.id} to={`/dashboard/activity/${act.id}`} className="block">
+        <Link key={act.id} to={`/dashboard/activity/${act.id}?stop=${stopId}`} className="block">
           <div className="border rounded-lg p-3 hover:shadow-card-hover transition-shadow cursor-pointer">
             <div className="flex justify-between items-start">
               <div className="min-w-0 flex-1">
@@ -231,16 +231,18 @@ function TripDetailContent() {
       }
       setBookedByStop(stopBookings);
 
-      // Fetch recommendations
+      // Fetch recommendations. Stops without dates are skipped — bookings are
+      // anchored at stops with date ranges, so a date-less stop can't host one.
       const travTags = profile?.interest_tags || [];
       const recs: Record<string, Activity[]> = {};
       for (const stop of stopsData || []) {
         if (!stop.latitude || !stop.longitude) continue;
+        if (!stop.arrival_date || !stop.departure_date) continue;
         const { data } = await supabase.rpc('get_recommended_activities', {
           _stop_lat: stop.latitude,
           _stop_lng: stop.longitude,
-          _arrival_date: stop.arrival_date || '2020-01-01',
-          _departure_date: stop.departure_date || '2030-12-31',
+          _arrival_date: stop.arrival_date,
+          _departure_date: stop.departure_date,
           _traveller_tags: travTags,
         });
         if (data && data.length > 0) {
@@ -323,7 +325,7 @@ function TripDetailContent() {
 
                 {/* Recommendations */}
                 {recommendations[stop.id] && recommendations[stop.id].length > 0 ? (
-                  <StopRecommendations activities={recommendations[stop.id]} />
+                  <StopRecommendations activities={recommendations[stop.id]} stopId={stop.id} />
                 ) : (
                   <p className="text-sm text-muted-foreground">No activities found near this stop.</p>
                 )}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -40,6 +40,8 @@ interface ActivityData {
 
 function ActivityDetailContent() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const tripStopId = searchParams.get('stop') || undefined;
   const { role, user } = useAuth();
   const navigate = useNavigate();
   const [activity, setActivity] = useState<ActivityData | null>(null);
@@ -260,6 +262,7 @@ function ActivityDetailContent() {
           activity={activity}
           open={bookingOpen}
           onOpenChange={setBookingOpen}
+          tripStopId={tripStopId}
           onBooked={() => {
             setTimeout(() => navigate(-1), 1500);
           }}
