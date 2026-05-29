@@ -48,7 +48,7 @@ export default function BookingModal({ activity, open, onOpenChange, onBooked }:
 }) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { fund, communityName } = useProviderCommunityFund(activity.provider_id);
+  const { fund, communityName, pledge } = useProviderCommunityFund(activity.provider_id);
   const [date, setDate] = useState<Date | undefined>(
     activity.recurrence_type === 'one-time' && activity.event_date ? parseISO(activity.event_date) : undefined
   );
@@ -62,10 +62,11 @@ export default function BookingModal({ activity, open, onOpenChange, onBooked }:
   const topUpAmount = topUpPreset === 'custom'
     ? Math.max(0, parseFloat(topUpCustom) || 0)
     : (typeof topUpPreset === 'number' ? topUpPreset : 0);
+  const pledgeRate = pledge ? Number(pledge.pledge_percentage) / 100 : 0;
 
   const breakdown = useMemo(
-    () => computeBreakdown({ pricePerPerson, participants, topUp: topUpAmount }),
-    [pricePerPerson, participants, topUpAmount]
+    () => computeBreakdown({ pricePerPerson, participants, topUp: topUpAmount, providerPledgeRate: pledgeRate }),
+    [pricePerPerson, participants, topUpAmount, pledgeRate]
   );
 
   const isDateAllowed = useMemo(() => {
@@ -228,9 +229,15 @@ export default function BookingModal({ activity, open, onOpenChange, onBooked }:
           <div className="border-t pt-3 space-y-1.5 text-sm">
             <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-1">Where your money goes</p>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">To provider ({participants} × {formatMoney(pricePerPerson, currency)})</span>
+              <span className="text-muted-foreground">To provider ({participants} × {formatMoney(pricePerPerson, currency)}{pledge ? ', after pledge' : ''})</span>
               <span>{formatMoney(breakdown.providerNet, currency)}</span>
             </div>
+            {breakdown.providerPledge > 0 && (
+              <div className="flex justify-between text-primary">
+                <span>Community fund contribution ({Number(pledge!.pledge_percentage)}% from provider)</span>
+                <span>{formatMoney(breakdown.providerPledge, currency)}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">Platform commission (5%)</span>
               <span>{formatMoney(breakdown.commission, currency)}</span>
@@ -241,7 +248,7 @@ export default function BookingModal({ activity, open, onOpenChange, onBooked }:
             </div>
             {breakdown.topUp > 0 && (
               <div className="flex justify-between text-primary">
-                <span>Contribution to {communityName} fund</span>
+                <span>Your top-up to {communityName} fund</span>
                 <span>{formatMoney(breakdown.topUp, currency)}</span>
               </div>
             )}

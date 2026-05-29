@@ -27,6 +27,45 @@ function FitBounds({ stops }: { stops: Stop[] }) {
   return null;
 }
 
+function StopsPolyline({ stops }: { stops: Stop[] }) {
+  const map = useMap();
+  const validStops = useMemo(() => stops.filter((s) => s.latitude && s.longitude), [stops]);
+
+  useEffect(() => {
+    if (!map || validStops.length < 2) return;
+    const g = (window as any).google;
+    if (!g?.maps) return;
+
+    // Resolve primary green from the design system at runtime
+    const primaryHsl = getComputedStyle(document.documentElement)
+      .getPropertyValue('--primary')
+      .trim() || '158 64% 42%';
+    const color = `hsl(${primaryHsl})`;
+
+    const dashSymbol = {
+      path: 'M 0,-1 0,1',
+      strokeOpacity: 1,
+      strokeColor: color,
+      scale: 3,
+    };
+
+    const polyline = new g.maps.Polyline({
+      path: validStops.map((s) => ({ lat: s.latitude!, lng: s.longitude! })),
+      geodesic: true,
+      strokeOpacity: 0,
+      icons: [{ icon: dashSymbol, offset: '0', repeat: '14px' }],
+      zIndex: 0,
+      map,
+    });
+
+    return () => {
+      polyline.setMap(null);
+    };
+  }, [map, validStops]);
+
+  return null;
+}
+
 export default function TripMap({ stops, className = 'h-full w-full min-h-[400px] rounded-lg overflow-hidden' }: TripMapProps) {
   const validStops = stops.filter((s) => s.latitude && s.longitude);
   const center = validStops.length > 0
@@ -42,8 +81,9 @@ export default function TripMap({ stops, className = 'h-full w-full min-h-[400px
         mapId="trip-map"
       >
         <FitBounds stops={stops} />
+        <StopsPolyline stops={stops} />
         {validStops.map((stop, i) => (
-          <AdvancedMarker key={stop.id} position={{ lat: stop.latitude!, lng: stop.longitude! }}>
+          <AdvancedMarker key={stop.id} position={{ lat: stop.latitude!, lng: stop.longitude! }} zIndex={10}>
             <div className="bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center text-xs font-bold shadow-md">
               {i + 1}
             </div>

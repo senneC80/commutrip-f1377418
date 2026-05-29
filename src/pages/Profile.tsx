@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { User, X } from 'lucide-react';
-import ProviderPledgeSection from '@/components/ProviderPledgeSection';
+
 
 const SUGGESTED_TAGS = [
   'Nature', 'Culture', 'Food & Cooking', 'Adventure', 'History',
@@ -142,7 +142,7 @@ export default function Profile() {
         </Card>
       )}
 
-      {role === 'provider' && <ProviderPledgeSection />}
+      
 
       <Button onClick={handleSave} disabled={saving} className="bg-gradient-primary hover:opacity-90 text-primary-foreground">
         {saving ? 'Saving…' : 'Save Changes'}

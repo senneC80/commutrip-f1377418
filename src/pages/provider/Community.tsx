@@ -16,6 +16,8 @@ import { useVerifiedCommunities } from '@/hooks/useVerifiedCommunities';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CommunityFundPanel from '@/components/CommunityFundPanel';
 import ImpactReportsPanel from '@/components/ImpactReportsPanel';
+import CommunityFundPublicSection from '@/components/CommunityFundPublicSection';
+import ProviderPledgeSection from '@/components/ProviderPledgeSection';
 
 interface Community {
   id: string;
@@ -303,21 +305,13 @@ export default function CommunityPage() {
 
   // Member view (not manager)
   if (myMembership && myCommunity) {
-    return (
-      <div>
-        <h1 className="text-2xl font-heading font-bold mb-6">Community</h1>
-        <Card className="shadow-card">
-          <CardHeader><CardTitle>{myCommunity.name}</CardTitle></CardHeader>
-          <CardContent>
-            {myCommunity.description && <p className="text-muted-foreground mb-3">{myCommunity.description}</p>}
-            <Badge variant={myMembership.status === 'accepted' ? 'default' : 'secondary'}>
-              {myMembership.status === 'accepted' ? 'Member' : 'Pending approval'}
-            </Badge>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <MemberCommunityView
+      community={myCommunity}
+      membership={myMembership}
+      currentUserId={user?.id}
+    />;
   }
+
 
   // Create form
   if (view === 'create') {
@@ -447,3 +441,98 @@ function BrowseCommunitiesView({ allCommunities, currentUserId, myMembership, jo
     </div>
   );
 }
+
+interface MemberViewProps {
+  community: Community;
+  membership: { community_id: string; status: string };
+  currentUserId?: string;
+}
+
+function MemberCommunityView({ community, membership, currentUserId }: MemberViewProps) {
+  const { verifiedIds } = useVerifiedCommunities();
+  const [otherMembers, setOtherMembers] = useState<{ user_id: string; first_name: string; last_name: string; avatar_url: string | null }[]>([]);
+
+  useEffect(() => {
+    if (membership.status !== 'accepted') return;
+    (async () => {
+      const { data: mems } = await supabase.rpc('get_accepted_community_members', { _community_id: community.id });
+      if (!mems) return;
+      const ids = (mems as { provider_id: string }[]).map(m => m.provider_id).filter(id => id !== currentUserId);
+      if (ids.length === 0) { setOtherMembers([]); return; }
+      const { data: profs } = await supabase
+        .from('profiles')
+        .select('user_id, first_name, last_name, avatar_url')
+        .in('user_id', ids);
+      if (profs) setOtherMembers(profs as typeof otherMembers);
+    })();
+  }, [community.id, currentUserId, membership.status]);
+
+  const isVerified = verifiedIds.has(community.id);
+  const isPending = membership.status !== 'accepted';
+
+  return (
+    <div className="max-w-3xl space-y-6">
+      <div>
+        <h1 className="text-2xl font-heading font-bold flex items-center gap-2 flex-wrap">
+          {community.name}
+          {isVerified && <VerifiedBadge size="sm" />}
+          <Badge variant={isPending ? 'secondary' : 'default'} className="text-xs">
+            {isPending ? 'Pending approval' : 'Member'}
+          </Badge>
+        </h1>
+        {community.description && <p className="text-muted-foreground mt-1">{community.description}</p>}
+      </div>
+
+      {!isPending && (
+        <>
+          <CommunityFundPublicSection communityId={community.id} communityName={community.name} />
+
+          <ProviderPledgeSection />
+
+          <Card className="shadow-card">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" /> Other Members ({otherMembers.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {otherMembers.length === 0 ? (
+                <p className="text-sm text-muted-foreground">You're the only accepted member so far.</p>
+              ) : (
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {otherMembers.map(m => {
+                    const fullName = `${m.first_name} ${m.last_name}`.trim() || 'Member';
+                    const initials = `${m.first_name?.[0] || ''}${m.last_name?.[0] || ''}`.toUpperCase() || '?';
+                    return (
+                      <li key={m.user_id} className="flex items-center gap-3 border rounded-lg p-2">
+                        <MemberAvatar avatarUrl={m.avatar_url} initials={initials} />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{fullName}</p>
+                          {m.user_id === community.manager_id && (
+                            <Badge variant="secondary" className="text-xs mt-0.5">Manager</Badge>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
+    </div>
+  );
+}
+
+function MemberAvatar({ avatarUrl, initials }: { avatarUrl: string | null; initials: string }) {
+  if (avatarUrl) {
+    return <img src={avatarUrl} alt="" className="h-10 w-10 rounded-full object-cover" />;
+  }
+  return (
+    <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
+      {initials}
+    </div>
+  );
+}
+

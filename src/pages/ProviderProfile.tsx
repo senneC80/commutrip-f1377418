@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { MapPin, DollarSign, Users, MessageSquare } from 'lucide-react';
+import { MapPin, DollarSign, Users, MessageSquare, ArrowLeft } from 'lucide-react';
 
 interface Profile {
   first_name: string;
@@ -35,6 +35,7 @@ interface CommunityInfo {
 export default function ProviderProfile() {
   const { id } = useParams<{ id: string }>();
   const { user, role } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -69,6 +70,11 @@ export default function ProviderProfile() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+      {role === 'traveller' && (
+        <Button variant="ghost" className="gap-2 -ml-2" onClick={() => navigate(-1)}>
+          <ArrowLeft className="h-4 w-4" /> Back
+        </Button>
+      )}
       <Card className="shadow-card">
         <CardContent className="pt-6 space-y-3">
           <div className="flex items-center gap-4">
