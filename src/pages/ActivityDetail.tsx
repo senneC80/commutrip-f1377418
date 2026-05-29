@@ -53,6 +53,7 @@ function ActivityDetailContent() {
   const [msgText, setMsgText] = useState('');
   const [msgSending, setMsgSending] = useState(false);
   const { toast } = useToast();
+  const { pledge, fund, communityName: pledgeCommName } = useProviderCommunityFund(activity?.provider_id);
 
   useEffect(() => {
     if (!id) return;
