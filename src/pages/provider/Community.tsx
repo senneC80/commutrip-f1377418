@@ -16,6 +16,8 @@ import { useVerifiedCommunities } from '@/hooks/useVerifiedCommunities';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CommunityFundPanel from '@/components/CommunityFundPanel';
 import ImpactReportsPanel from '@/components/ImpactReportsPanel';
+import CommunityFundPublicSection from '@/components/CommunityFundPublicSection';
+import ProviderPledgeSection from '@/components/ProviderPledgeSection';
 
 interface Community {
   id: string;
