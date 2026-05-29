@@ -305,21 +305,13 @@ export default function CommunityPage() {
 
   // Member view (not manager)
   if (myMembership && myCommunity) {
-    return (
-      <div>
-        <h1 className="text-2xl font-heading font-bold mb-6">Community</h1>
-        <Card className="shadow-card">
-          <CardHeader><CardTitle>{myCommunity.name}</CardTitle></CardHeader>
-          <CardContent>
-            {myCommunity.description && <p className="text-muted-foreground mb-3">{myCommunity.description}</p>}
-            <Badge variant={myMembership.status === 'accepted' ? 'default' : 'secondary'}>
-              {myMembership.status === 'accepted' ? 'Member' : 'Pending approval'}
-            </Badge>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <MemberCommunityView
+      community={myCommunity}
+      membership={myMembership}
+      currentUserId={user?.id}
+    />;
   }
+
 
   // Create form
   if (view === 'create') {
