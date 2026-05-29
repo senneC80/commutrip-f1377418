@@ -80,52 +80,61 @@ export default function BookingModal({ activity, open, onOpenChange, onBooked, t
     if (tripStopId) setSelectedStopId(tripStopId);
   }, [tripStopId]);
 
-  // Fetch eligible stops when the modal opens without a pre-chosen stop
+  // Load stop metadata. Two modes:
+  //   - tripStopId supplied (e.g. recommendation flow): fetch just that one stop
+  //     so the date calendar can constrain to its window.
+  //   - tripStopId absent: fetch all the user's stops and filter by date overlap
+  //     with the activity, for the picker.
   useEffect(() => {
-    if (!open || tripStopId || !user) return;
+    if (!open || !user) return;
     let cancelled = false;
     (async () => {
       setStopsLoading(true);
-      // Pull all stops owned by this traveller; filter by date overlap client-side
-      // so we don't have to encode the activity's window into SQL.
-      const { data, error } = await supabase
+      const query = supabase
         .from('trip_stops')
         .select('id, location_name, arrival_date, departure_date, trip:trips!inner(title, user_id)')
         .eq('trip.user_id', user.id)
         .not('arrival_date', 'is', null)
-        .not('departure_date', 'is', null)
-        .order('arrival_date', { ascending: true });
+        .not('departure_date', 'is', null);
+      const { data, error } = tripStopId
+        ? await query.eq('id', tripStopId)
+        : await query.order('arrival_date', { ascending: true });
       if (cancelled) return;
       if (error) {
-        toast({ title: 'Could not load your trip stops', description: error.message, variant: 'destructive' });
+        toast({ title: 'Could not load trip stop(s)', description: error.message, variant: 'destructive' });
         setStopsLoading(false);
         return;
       }
-      const fromBound = activity.available_from ? parseISO(activity.available_from) : null;
-      const untilBound = activity.available_until ? parseISO(activity.available_until) : null;
-      const eventDate = activity.event_date ? parseISO(activity.event_date) : null;
 
-      const eligible: TripStopOption[] = (data || [])
-        .map((row: any) => ({
-          id: row.id,
-          location_name: row.location_name,
-          arrival_date: row.arrival_date,
-          departure_date: row.departure_date,
-          trip_title: row.trip?.title ?? '',
-        }))
-        .filter((s) => {
+      const mapped: TripStopOption[] = (data || []).map((row: any) => ({
+        id: row.id,
+        location_name: row.location_name,
+        arrival_date: row.arrival_date,
+        departure_date: row.departure_date,
+        trip_title: row.trip?.title ?? '',
+      }));
+
+      if (tripStopId) {
+        // Pre-selected mode: skip the eligibility filter (caller decided),
+        // just hand the stop metadata to the calendar.
+        setStopOptions(mapped);
+      } else {
+        const fromBound = activity.available_from ? parseISO(activity.available_from) : null;
+        const untilBound = activity.available_until ? parseISO(activity.available_until) : null;
+        const eventDate = activity.event_date ? parseISO(activity.event_date) : null;
+        const eligible = mapped.filter((s) => {
           const sArr = parseISO(s.arrival_date);
           const sDep = parseISO(s.departure_date);
           if (activity.recurrence_type === 'one-time') {
             if (!eventDate) return false;
             return !isBefore(eventDate, sArr) && !isAfter(eventDate, sDep);
           }
-          // Recurring: stop window must overlap the activity's availability window
           if (fromBound && isBefore(sDep, fromBound)) return false;
           if (untilBound && isAfter(sArr, untilBound)) return false;
           return true;
         });
-      setStopOptions(eligible);
+        setStopOptions(eligible);
+      }
       setStopsLoading(false);
     })();
     return () => { cancelled = true; };
@@ -252,6 +261,19 @@ export default function BookingModal({ activity, open, onOpenChange, onBooked, t
           <DialogTitle className="font-heading">Book: {activity.title}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-2">
+          {/* Pre-selected stop banner (recommendation flow) */}
+          {!showStopPicker && selectedStop && (
+            <div className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+              <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              <div>
+                <p className="font-medium">Booking for {selectedStop.trip_title} — {selectedStop.location_name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {format(parseISO(selectedStop.arrival_date), 'PPP')} → {format(parseISO(selectedStop.departure_date), 'PPP')}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Stop picker (only when caller didn't pre-supply a stop) */}
           {showStopPicker && (
             <div className="space-y-1.5">
