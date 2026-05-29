@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, MapPin, Clock, Users, DollarSign, Calendar, MessageSquare } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, Users, DollarSign, Calendar, MessageSquare, Heart } from 'lucide-react';
 import GoogleMapsProvider from '@/components/GoogleMapsProvider';
 import ActivityMap from '@/components/ActivityMap';
 import BookingModal from '@/components/BookingModal';
@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import { useProviderCommunityFund } from '@/hooks/useCommunityFund';
 
 interface ActivityData {
   id: string;
