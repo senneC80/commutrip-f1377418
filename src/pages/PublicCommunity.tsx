@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, Star, MapPin, DollarSign, Package, BookOpen } from 'lucide-react';
+import { Users, Star, MapPin, DollarSign, Package, BookOpen, ArrowLeft } from 'lucide-react';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import CommunityFundPublicSection from '@/components/CommunityFundPublicSection';
 
