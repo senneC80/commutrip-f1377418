@@ -35,16 +35,11 @@ export function useProviderCommunityFund(providerId: string | undefined | null) 
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data: mem } = await supabase
-        .from('community_members')
-        .select('community_id')
-        .eq('provider_id', providerId)
-        .eq('status', 'accepted')
-        .maybeSingle();
-      if (!mem || cancelled) { setLoading(false); return; }
+      const { data: commId } = await supabase.rpc('get_provider_accepted_community', { _provider_id: providerId });
+      if (!commId || cancelled) { setLoading(false); return; }
       const [{ data: comm }, { data: f }] = await Promise.all([
-        supabase.from('communities').select('id, name').eq('id', mem.community_id).maybeSingle(),
-        supabase.from('community_funds').select('*').eq('community_id', mem.community_id).maybeSingle(),
+        supabase.from('communities').select('id, name').eq('id', commId).maybeSingle(),
+        supabase.from('community_funds').select('*').eq('community_id', commId).maybeSingle(),
       ]);
       if (cancelled) return;
       if (comm) { setCommunityName(comm.name); setCommunityId(comm.id); }
