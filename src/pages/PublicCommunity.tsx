@@ -121,6 +121,11 @@ export default function PublicCommunity() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {role === 'traveller' && (
+        <Button variant="ghost" className="gap-2 -ml-2" onClick={() => navigate(-1)}>
+          <ArrowLeft className="h-4 w-4" /> Back
+        </Button>
+      )}
       {/* Header */}
       <Card className="shadow-card">
         <CardContent className="pt-6">
