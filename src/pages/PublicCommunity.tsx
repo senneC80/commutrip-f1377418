@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, Star, MapPin, DollarSign, Package, BookOpen } from 'lucide-react';
+import { Users, Star, MapPin, DollarSign, Package, BookOpen, ArrowLeft } from 'lucide-react';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import CommunityFundPublicSection from '@/components/CommunityFundPublicSection';
 
@@ -36,6 +37,8 @@ interface PopularActivity {
 
 export default function PublicCommunity() {
   const { id } = useParams<{ id: string }>();
+  const { role } = useAuth();
+  const navigate = useNavigate();
   const [community, setCommunity] = useState<CommunityData | null>(null);
   const [managerName, setManagerName] = useState('');
   const [members, setMembers] = useState<MemberProfile[]>([]);
@@ -118,6 +121,11 @@ export default function PublicCommunity() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {role === 'traveller' && (
+        <Button variant="ghost" className="gap-2 -ml-2" onClick={() => navigate(-1)}>
+          <ArrowLeft className="h-4 w-4" /> Back
+        </Button>
+      )}
       {/* Header */}
       <Card className="shadow-card">
         <CardContent className="pt-6">
