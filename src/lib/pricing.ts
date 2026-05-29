@@ -6,21 +6,24 @@ export const PAYMENT_PROCESSING_RATE = 0.029; // 2.9%
 export const PAYMENT_PROCESSING_FIXED = 0.30; // €0.30 per transaction
 
 export interface PriceBreakdown {
-  subtotal: number;        // price * participants — provider's headline take
+  subtotal: number;        // price * participants — provider's gross take before pledge
   commission: number;      // platform commission
   paymentFee: number;      // simulated payment processing
-  topUp: number;           // optional voluntary contribution
+  topUp: number;           // optional voluntary contribution from traveller
+  providerPledge: number;  // portion of provider's share routed to community fund
   total: number;           // what the traveller pays
-  providerNet: number;     // what reaches the provider (= subtotal in our model)
+  providerNet: number;     // what reaches the provider after pledge (= subtotal − providerPledge)
 }
 
 export function computeBreakdown(opts: {
   pricePerPerson: number;
   participants: number;
   topUp?: number;
+  providerPledgeRate?: number; // 0–1 (e.g. 0.05 for 5%)
 }): PriceBreakdown {
   const subtotal = round2(opts.pricePerPerson * opts.participants);
   const commission = round2(subtotal * PLATFORM_COMMISSION_RATE);
+  const providerPledge = round2(subtotal * (opts.providerPledgeRate || 0));
   const baseTotalPrePayment = subtotal + commission + (opts.topUp || 0);
   const paymentFee = round2(baseTotalPrePayment * PAYMENT_PROCESSING_RATE + PAYMENT_PROCESSING_FIXED);
   const total = round2(baseTotalPrePayment + paymentFee);
@@ -29,8 +32,9 @@ export function computeBreakdown(opts: {
     commission,
     paymentFee,
     topUp: round2(opts.topUp || 0),
+    providerPledge,
     total,
-    providerNet: subtotal,
+    providerNet: round2(subtotal - providerPledge),
   };
 }
 
