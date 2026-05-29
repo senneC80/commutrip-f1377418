@@ -37,6 +37,8 @@ interface PopularActivity {
 
 export default function PublicCommunity() {
   const { id } = useParams<{ id: string }>();
+  const { role } = useAuth();
+  const navigate = useNavigate();
   const [community, setCommunity] = useState<CommunityData | null>(null);
   const [managerName, setManagerName] = useState('');
   const [members, setMembers] = useState<MemberProfile[]>([]);
