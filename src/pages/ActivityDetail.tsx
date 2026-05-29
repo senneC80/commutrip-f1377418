@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, MapPin, Clock, Users, DollarSign, Calendar, MessageSquare } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, Users, DollarSign, Calendar, MessageSquare, Heart } from 'lucide-react';
 import GoogleMapsProvider from '@/components/GoogleMapsProvider';
 import ActivityMap from '@/components/ActivityMap';
 import BookingModal from '@/components/BookingModal';
@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import { useProviderCommunityFund } from '@/hooks/useCommunityFund';
 
 interface ActivityData {
   id: string;
@@ -52,6 +53,7 @@ function ActivityDetailContent() {
   const [msgText, setMsgText] = useState('');
   const [msgSending, setMsgSending] = useState(false);
   const { toast } = useToast();
+  const { pledge, fund, communityName: pledgeCommName } = useProviderCommunityFund(activity?.provider_id);
 
   useEffect(() => {
     if (!id) return;
@@ -153,7 +155,24 @@ function ActivityDetailContent() {
             )}
           </div>
 
+          {pledge && fund && Number(pledge.pledge_percentage) > 0 && (
+            <div className="border border-primary/30 bg-primary/5 rounded-lg p-3 flex gap-3">
+              <Heart className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p>
+                  <span className="font-medium">{Number(pledge.pledge_percentage)}% of this booking</span> goes to{' '}
+                  {pledgeCommName ? <span className="font-medium">{pledgeCommName}'s fund</span> : 'the community fund'}
+                  {fund.purpose && <> — {fund.purpose}</>}.
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  This comes directly from the provider's share at no extra cost to you.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
+
             <p className="text-sm font-medium">Schedule</p>
             {activity.recurrence_type === 'one-time' ? (
               <div className="flex items-center gap-2 text-sm">
