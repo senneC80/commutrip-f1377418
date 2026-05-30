@@ -43,17 +43,3 @@ npm run test       # unit tests (vitest)
 | **Activity** | A provider-run experience (recurring or one-time) with a schedule and capacity |
 | **Community** | A verified collective of local providers sharing a community fund |
 | **Provider Pledge** | A percentage of each booking automatically contributed to the community fund |
-
-## Demo accounts
-
-Seed the database with `python seed_morocco.py` (requires `pip install supabase`).
-All demo accounts use password `demo1234`.
-
-| Email | Role |
-|---|---|
-| sarah@demo.com | Traveller |
-| omar@demo.com | Provider / Community manager (Imlil) |
-| khalid@demo.com | Provider / Community manager (Marrakech) |
-| amina@demo.com | Provider / Community manager (Essaouira) |
-| youssef@demo.com | Provider (Imlil) |
-| fatima@demo.com | Provider (Imlil) |
